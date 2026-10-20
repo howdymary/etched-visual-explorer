@@ -1,0 +1,331 @@
+let sceneSequence = 0;
+
+const point = (x, y) => `${x},${y}`;
+const text = (x, y, value, cls = 'scene-label', anchor = 'start') => `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${value}</text>`;
+const line = (d, cls = 'scene-wire', attrs = '') => `<path d="${d}" class="${cls}" ${attrs}/>`;
+const rect = (x, y, w, h, cls, rx = 0) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" class="${cls}"/>`;
+const comp = (id, label, markup, extra = '') => `<g class="scene-component ${extra}" data-component="${id}" tabindex="-1" role="button" aria-label="${label}">${markup}</g>`;
+const tag = (x, y, value) => `<g>${rect(x, y - 19, value.length * 8.1 + 22, 28, 'scene-tag', 3)}${text(x + 11, y, value, 'scene-mono scene-tag-label')}</g>`;
+const dot = (x, y, r = 4, cls = 'scene-node') => `<circle cx="${x}" cy="${y}" r="${r}" class="${cls}"/>`;
+const flow = (d, id = '', cls = '') => `${line(d, `scene-flow ${cls}`, id ? `id="__ID__-${id}"` : '')}${id ? `<circle r="5" class="scene-particle" data-path="__ID__-${id}"/>` : ''}`;
+const arrow = (d, cls = 'scene-arrow') => line(d, cls, 'marker-end="url(#__ID__-arrow)"');
+const hint = (x, y) => `<g class="scene-inspect-mark">${dot(x, y, 10, 'scene-inspect-dot')}${line(`M${x - 4} ${y}h8 M${x} ${y - 4}v8`, 'scene-inspect-plus')}</g>`;
+const smallCells = (x, y, cols, rows, cellW, cellH, gap = 4, cls = 'scene-cell') => Array.from({ length: cols * rows }, (_, i) => rect(x + (i % cols) * (cellW + gap), y + Math.floor(i / cols) * (cellH + gap), cellW, cellH, `${cls} ${i % 9 === 2 ? 'scene-cell-accent' : ''}`, 1)).join('');
+
+function title(number, label, detail) {
+  return `<g class="scene-topline">${text(55, 59, `${String(number).padStart(2, '0')} / ${label.toUpperCase()}`, 'scene-mono scene-eyebrow')}${text(55, 92, detail, 'scene-subtitle')}</g>`;
+}
+function bottom(left, right = 'CONCEPTUAL · NOT AN ETCHED FLOORPLAN') {
+  return `<g class="scene-footline">${line('M55 731H945', 'scene-hairline')}${text(55, 760, left, 'scene-mono scene-caption')}${text(945, 760, right, 'scene-mono scene-caption', 'end')}</g>`;
+}
+function blade(x, y, w = 236, h = 38, index = 0) {
+  return `<g>${rect(x, y, w, h, 'scene-rack-blade', 2)}${rect(x + 8, y + 8, 4, h - 16, index % 3 === 0 ? 'scene-accent-fill' : 'scene-sage-fill', 1)}${smallCells(x + 26, y + 9, 9, 2, 5, 7, 3, 'scene-vent')}${rect(x + w - 62, y + 10, 28, h - 20, 'scene-blade-port', 2)}${dot(x + w - 16, y + h / 2, 3, 'scene-status')}${line(`M${x + 15} ${y + h - 3}H${x + w - 12}`, 'scene-rack-seam')}</g>`;
+}
+function rack(x, y, scale = 1, options = {}) {
+  const depth = options.depth ?? 42;
+  const width = options.width ?? 280;
+  const height = 490;
+  const fill = options.muted ? 'scene-rack-side scene-rack-muted' : 'scene-rack-side';
+  return `<g transform="translate(${x} ${y}) scale(${scale})" class="${options.muted ? 'scene-quiet-rack' : ''}">
+    <path d="M0 0L${depth} -25H${width + depth}L${width} 0Z" class="scene-rack-top"/>
+    <path d="M${width} 0L${width + depth} -25V${height - 25}L${width} ${height}Z" class="${fill}"/>
+    ${rect(0, 0, width, height, 'scene-rack-frame', 3)}${rect(13, 17, width - 26, height - 35, 'scene-rack-face', 2)}
+    ${Array.from({ length: 8 }, (_, i) => blade(22, 58 + i * 44, width - 44, 38, i)).join('')}
+    ${rect(22, 22, width - 44, 26, 'scene-rack-header', 2)}${text(35, 41, 'INFERENCE SYSTEM', 'scene-mono scene-rack-small')}${dot(width - 38, 35, 3, 'scene-status')}
+    ${Array.from({ length: 5 }, (_, i) => { const cx = 49 + i * 44; return `<circle cx="${cx}" cy="441" r="15" class="scene-fan-ring"/><path d="M${cx} 428v26 M${cx - 13} 441h26 M${cx - 9} 432l18 18 M${cx + 9} 432l-18 18" class="scene-fan-spokes"/>`; }).join('')}
+    ${Array.from({ length: 9 }, (_, i) => `${dot(7, 36 + i * 49, 1.8, 'scene-rack-screw')}${dot(width - 7, 36 + i * 49, 1.8, 'scene-rack-screw')}`).join('')}
+    ${rect(19, height, 25, 10, 'scene-rack-foot', 1)}${rect(width - 44, height, 25, 10, 'scene-rack-foot', 1)}
+  </g>`;
+}
+function memoryStack(x, y, label = 'HBM', scale = 1) {
+  return `<g transform="translate(${x} ${y}) scale(${scale})">${Array.from({ length: 5 }, (_, i) => { const yy = 16 - i * 5; return `<path d="M0 ${yy}L15 ${yy - 9}H82L67 ${yy}Z" class="scene-hbm-top"/><path d="M0 ${yy}H67V${yy + 16}H0Z" class="scene-hbm-front"/><path d="M67 ${yy}L82 ${yy - 9}V${yy + 7}L67 ${yy + 16}Z" class="scene-hbm-side"/>`; }).join('')}${text(33, 3, label, 'scene-mono scene-hbm-label', 'middle')}</g>`;
+}
+function die(x, y, width = 260, height = 260) {
+  return `<g>${rect(x - 7, y - 7, width + 14, height + 14, 'scene-die-rim', 2)}${rect(x, y, width, height, 'scene-die', 1)}${smallCells(x + 18, y + 18, 5, 5, (width - 60) / 5, (height - 60) / 5, 6)}${rect(x + 70, y + 70, width - 105, height - 105, 'scene-compute-mini', 2)}${line(`M${x + 16} ${y + height - 34}H${x + width - 16} M${x + 34} ${y + 16}V${y + height - 16}`, 'scene-die-route')}</g>`;
+}
+function rackOpening() {
+  return `${title(1, 'The system', 'A response starts with a system of decisions.')}
+    <ellipse cx="544" cy="698" rx="271" ry="24" class="scene-ground"/>
+    ${rack(158, 273, 0.66, { muted: true })}
+    ${comp('rack', 'Explore the inference server rack', rack(397, 187, 1), '')}
+    ${comp('cooling', 'Explore power and cooling', `<path d="M728 249V642M749 249V642" class="scene-cooling-pipe"/>${line('M728 272H706 M728 360H706 M728 448H706 M728 536H706 M728 624H706', 'scene-cooling-branch')}${text(774, 269, 'COOLING', 'scene-mono scene-muted')}${text(774, 295, '&amp; POWER', 'scene-mono scene-muted')}${hint(740, 658)}`)}
+    ${comp('links', 'Explore the network and chip links', `${flow('M90 379H348Q370 379 370 402V413H419', 'request')}${text(86, 339, 'AI request', 'scene-large-label')}${text(86, 365, 'Application → serving system', 'scene-body-label')}${flow('M419 500H374Q352 500 352 524H90', 'response')}${text(86, 563, 'Generated tokens', 'scene-large-label')}${text(86, 589, 'The experience people see', 'scene-body-label')}`)}
+    ${line('M543 158V127H807', 'scene-callout')}${text(814, 132, 'Many chips. One service.', 'scene-body-label')}
+    ${hint(668, 214)}${bottom('EXPLORE THE RACK, THEN FOLLOW ONE CHIP', 'ILLUSTRATIVE SYSTEM')}`;
+}
+function packageScene() {
+  return `${title(2, 'The package', 'Compute and memory meet at the package.')}
+    <ellipse cx="500" cy="632" rx="368" ry="25" class="scene-ground"/>
+    <path d="M125 273L205 223H870L790 273Z" class="scene-substrate-top"/>
+    <path d="M125 273H790V587H125Z" class="scene-substrate"/>
+    <path d="M790 273L870 223V537L790 587Z" class="scene-substrate-side"/>
+    ${smallCells(143, 558, 31, 1, 13, 9, 7, 'scene-package-pad')}
+    ${line('M183 303H753 M183 330H753 M183 503H753 M183 530H753', 'scene-package-trace')}
+    ${comp('hbm', 'Explore high-bandwidth memory alongside the compute die', `${memoryStack(185, 329, 'HBM', 1.28)}${memoryStack(185, 443, 'HBM', 1.28)}${memoryStack(674, 329, 'HBM', 1.28)}${memoryStack(674, 443, 'HBM', 1.28)}${hint(225, 479)}`)}
+    ${comp('compute', 'Explore the compute die', `${die(365, 292, 266, 238)}${text(498, 418, 'COMPUTE DIE', 'scene-mono scene-die-label', 'middle')}${hint(600, 506)}`)}
+    ${flow('M291 352H349', 'hbm-in')}${flow('M654 465H647', 'hbm-out')}
+    ${line('M234 286V176H86', 'scene-callout')}${text(85, 158, 'High-bandwidth memory', 'scene-large-label')}${text(85, 186, 'Separate stacks alongside the die', 'scene-body-label')}
+    ${line('M516 553V653H726', 'scene-callout')}${text(735, 648, 'Package substrate', 'scene-large-label')}${text(735, 675, 'Connects the components', 'scene-body-label')}
+    ${bottom('HBM HOLDS DATA · THE DIE PERFORMS COMPUTATION')}`;
+}
+function architectureScene() {
+  const compute = `<g>${rect(441, 302, 339, 226, 'scene-compute', 5)}${smallCells(463, 365, 8, 4, 31, 26, 7, 'scene-compute-cell')}${text(462, 337, 'MATH / COMPUTE', 'scene-mono scene-block-label')}${hint(751, 330)}</g>`;
+  const memory = `${rect(89, 245, 116, 338, 'scene-memory-block', 4)}${Array.from({ length: 6 }, (_, i) => rect(105, 286 + i * 43, 83, 29, 'scene-memory-layer', 2)).join('')}${text(147, 275, 'HBM', 'scene-mono scene-block-label', 'middle')}${hint(147, 561)}`;
+  return `${title(3, 'Architecture', 'Organize the chip around the movement of data.')}
+    ${rect(254, 198, 582, 432, 'scene-chip-boundary', 7)}${tag(271, 184, 'COMPUTE DIE')}
+    ${comp('hbm', 'Explore HBM and memory capacity', memory)}
+    ${comp('compute', 'Explore the math and compute units', compute)}
+    ${comp('buffer', 'Explore buffers and on-chip storage', `${rect(278, 302, 120, 226, 'scene-storage', 5)}${text(338, 340, 'ON-CHIP', 'scene-mono scene-block-label', 'middle')}${text(338, 365, 'STORAGE', 'scene-mono scene-block-label', 'middle')}${smallCells(297, 389, 3, 4, 23, 22, 5, 'scene-storage-cell')}${hint(369, 501)}`)}
+    ${comp('control', 'Explore control and scheduling', `${rect(278, 220, 502, 57, 'scene-control', 4)}${text(299, 255, 'CONTROL &amp; SCHEDULING', 'scene-mono scene-block-label')}${hint(751, 249)}`)}
+    ${comp('conversion', 'Explore numeric conversion and data rearrangement', `${rect(278, 553, 502, 55, 'scene-conversion', 4)}${text(299, 587, 'NUMERIC CONVERSION / DATA REARRANGEMENT', 'scene-mono scene-block-label')}${hint(751, 580)}`)}
+    ${comp('interconnect', 'Explore the on-chip interconnect and interfaces', `${line('M814 246V580 M206 415H254 M398 415H441 M529 277V302 M529 528V553 M780 415H899', 'scene-bus')}${dot(814, 415, 7)}${rect(865, 374, 70, 82, 'scene-interface', 3)}${text(900, 408, 'I/O', 'scene-mono scene-block-label', 'middle')}${text(900, 434, 'LINK', 'scene-mono scene-block-label', 'middle')}${hint(900, 476)}`)}
+    ${flow('M206 415H254', 'arch-in')}${flow('M398 415H441', 'arch-compute')}${flow('M780 415H865', 'arch-output')}
+    ${text(89, 670, 'Capacity → bandwidth → dataflow → useful computation', 'scene-large-label')}
+    ${bottom('THE ARCHITECTURE DEFINES RESPONSIBILITIES & INTERFACES')}`;
+}
+function quantizationScene() {
+  const vals = [0.4, -0.2, 0.7, 1.1, -0.9, 0.1, 0.6, -0.3, 0.8, -1.0, 0.3, 0.2, -0.6, 0.5, -0.1, 0.9, -0.4, 0.6, -0.8, 0.3, 1.0, -0.7, 0.2, -0.5, 0.1, 0.9, -0.3, 0.4, -0.2, 0.7, -0.6, 0.5];
+  const grid = (x, low) => vals.map((v, i) => `<g>${rect(x + (i % 8) * 35, 300 + Math.floor(i / 8) * 45, 29, 37, `scene-number-cell ${Math.abs(v) > .65 ? 'scene-number-hot' : ''}`, 3)}${text(x + (i % 8) * 35 + 14.5, 324 + Math.floor(i / 8) * 45, low ? Math.round(v * 5) : v.toFixed(1), 'scene-mono scene-number', 'middle')}</g>`).join('');
+  return `${title(4, 'Numerical formats', 'Fewer bits change the work the hardware must do.')}
+    ${comp('buffer', 'Explore the source block of 32 eight-bit values', `${rect(69, 218, 337, 353, 'scene-format-card', 6)}${text(94, 259, '32 × 8-bit values', 'scene-large-label')}${text(94, 285, 'Illustrative FP8 block', 'scene-body-label')}${grid(94, false)}${text(94, 528, '256 bits of value data', 'scene-mono scene-format-total')}${hint(373, 541)}`)}
+    ${comp('conversion', 'Explore quantization from eight to four bits', `${rect(595, 218, 337, 353, 'scene-format-card scene-format-output', 6)}${text(620, 259, '32 × 4-bit values', 'scene-large-label')}${text(620, 285, 'Illustrative quantized codes', 'scene-body-label')}${grid(620, true)}${text(620, 528, '128 bits of value data', 'scene-mono scene-format-total')}${hint(899, 541)}${arrow('M430 383H565')}${text(500, 345, 'QUANTIZE', 'scene-mono scene-accent-label', 'middle')}${text(500, 431, 'Scale + round', 'scene-body-label', 'middle')}`)}
+    ${line('M238 585V617H765V585', 'scene-bracket')}${text(501, 655, 'Less data to store and move. Numerical quality still needs validation.', 'scene-body-label', 'middle')}${text(501, 684, 'Scale metadata is additional; storage savings depend on the format.', 'scene-caption', 'middle')}
+    ${bottom('A FORMAT DECISION CROSSES MEMORY, COMPUTE & VERIFICATION', 'ILLUSTRATIVE VALUES · NOT A FORMAT SPECIFICATION')}`;
+}
+function microScene() {
+  const block = (id, label, x, symbol, detail, cls = '') => comp(id, `Explore ${label.toLowerCase()}`, `${rect(x, 305, 139, 165, `scene-datapath-block ${cls}`, 5)}${text(x + 69.5, 377, symbol, 'scene-operation-symbol', 'middle')}${text(x + 69.5, 418, label, 'scene-mono scene-block-label', 'middle')}${text(x + 69.5, 445, detail, 'scene-datapath-small', 'middle')}${hint(x + 118, 326)}`);
+  return `${title(5, 'Microarchitecture', 'Turn the requirements into a cycle-by-cycle implementation.')}
+    ${tag(61, 214, 'INSIDE THE MATH BLOCK')}
+    ${comp('interface', 'Explore the 32-bit block input and output interfaces', `${text(67, 350, '32-bit', 'scene-large-label')}${text(67, 380, 'input', 'scene-body-label')}${text(868, 350, '32-bit', 'scene-large-label')}${text(868, 380, 'output', 'scene-body-label')}${dot(99, 411, 6)}${dot(901, 411, 6)}`)}
+    ${block('register', 'REGISTER', 183, 'D', 'Hold a value')}${block('multiply', 'MULTIPLY', 431, '×', 'Compute', 'scene-math-block')}${block('add', 'ADD', 678, '+', 'Accumulate', 'scene-math-block')}
+    ${flow('M106 411H183', 'micro-in')}${flow('M322 387H431', 'micro-mul')}${flow('M570 387H678', 'micro-add')}${flow('M817 411H895', 'micro-out')}
+    ${line('M252 486V532 M500 486V532 M748 486V532 M140 532H861', 'scene-clock-wire')}${text(140, 568, 'CLOCK / PIPELINE BOUNDARIES', 'scene-mono scene-muted')}${line('M145 608h18v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20', 'scene-clock-wave')}
+    ${text(500, 665, 'Interfaces must agree on width, timing, format, and flow control.', 'scene-body-label', 'middle')}
+    ${bottom('RTL DESCRIBES THE LOGIC · PPA CONSTRAINS THE IMPLEMENTATION', 'SIMPLIFIED DATAPATH · ILLUSTRATIVE TIMING')}`;
+}
+function verificationScene() {
+  return `${title(6, 'Design verification', 'Compare the implementation with independent architectural intent.')}
+    ${comp('testbench', 'Explore the verification testbench and stimulus', `${rect(74, 174, 854, 445, 'scene-testbench-boundary', 7)}${text(96, 207, 'TESTBENCH', 'scene-mono scene-muted')}${rect(113, 337, 160, 112, 'scene-test-source', 4)}${text(193, 376, 'STIMULUS', 'scene-mono scene-block-label', 'middle')}${text(193, 406, 'Inputs + edge cases', 'scene-body-label', 'middle')}${hint(250, 357)}`)}
+    ${comp('reference', 'Explore the independent expected behavior derived from the specification', `${rect(375, 235, 253, 116, 'scene-reference', 4)}${text(501, 277, 'REFERENCE MODEL', 'scene-mono scene-block-label', 'middle')}${text(501, 310, 'Architectural specification', 'scene-body-label', 'middle')}${hint(607, 255)}`)}
+    ${comp('compute', 'Explore the RTL implementation under test', `${rect(375, 424, 253, 116, 'scene-compute', 4)}${text(501, 469, 'RTL IMPLEMENTATION', 'scene-mono scene-block-label', 'middle')}${text(501, 503, 'Design under test', 'scene-body-label', 'middle')}${hint(607, 445)}`)}
+    ${comp('comparator', 'Explore comparison of actual and expected results', `<path d="M793 317L873 393L793 469L713 393Z" class="scene-comparator"/>${text(793, 401, '=', 'scene-compare-symbol', 'middle')}${text(793, 505, 'COMPARE', 'scene-mono scene-block-label', 'middle')}${text(793, 534, 'Expected vs. actual', 'scene-body-label', 'middle')}${hint(849, 346)}`)}
+    ${flow('M273 372H315V293H375', 'dv-ref')}${flow('M273 412H315V482H375', 'dv-dut')}${flow('M628 293H688V370H737', 'dv-expected')}${flow('M628 482H688V417H737', 'dv-actual')}
+    <g class="scene-dv-pass" aria-hidden="false">${tag(694, 578, 'MATCH / TEST PASSES')}${dot(903, 567, 5, 'scene-status')}</g>
+    <g class="scene-dv-fault" aria-hidden="true">${tag(682, 578, 'MISMATCH / INVESTIGATE')}${line('M580 555V650H350V570', 'scene-feedback-wire')}${text(470, 681, 'Bug → RTL designer · Unclear intent → architecture', 'scene-body-label', 'middle')}</g>
+    <g class="scene-dv-pass" aria-hidden="false">${text(500, 681, 'Coverage builds confidence across normal behavior and edge cases.', 'scene-body-label', 'middle')}</g>
+    ${bottom('VERIFICATION STARTS FROM THE SPECIFICATION', 'PARALLEL WITH PHYSICAL DESIGN')}`;
+}
+function physicalScene() {
+  const routes = [
+    'M192 262H344V334H548V474H758', 'M192 281H315V355H570V500H758', 'M192 300H291V379H590V524H758',
+    'M204 565H370V441H478V239', 'M226 565H390V462H499V239', 'M249 565H411V484H522V239',
+    'M288 239V319H660V565', 'M310 239V301H683V565', 'M334 239V282H704V565',
+    'M758 347H647V421H561V565', 'M758 368H625V401H538V565', 'M192 432H275V527H460',
+  ];
+  const cells = Array.from({ length: 15 * 12 }, (_, i) => { const col = i % 15; const row = Math.floor(i / 15); const skip = (col > 4 && col < 10 && row > 2 && row < 8); if (skip) return ''; return rect(195 + col * 37, 245 + row * 27, i % 4 === 0 ? 29 : 25, 18, `scene-placed-cell ${i % 11 === 0 ? 'scene-placed-cell-dark' : ''}`, 1); }).join('');
+  return `${title(7, 'Physical design', 'Make the logic fit, connect, and meet its constraints.')}
+    ${rect(154, 204, 651, 406, 'scene-chip-boundary', 5)}
+    ${comp('cells', 'Explore standard cells and placement', `${cells}${rect(371, 322, 185, 211, 'scene-compute-physical', 3)}${smallCells(385, 337, 5, 7, 25, 21, 7, 'scene-physical-math-cell')}${hint(180, 229)}`)}
+    ${comp('routing', 'Explore routing, congestion, and timing', `${routes.map((d, i) => line(d, `scene-layout-route scene-route-${i % 3}`)).join('')}<ellipse cx="594" cy="397" rx="63" ry="78" class="scene-congestion"/>${hint(618, 411)}${line('M628 391H859V305', 'scene-callout')}${text(833, 266, 'CONGESTION', 'scene-mono scene-accent-label')}${text(833, 292, 'Reroute or move cells', 'scene-body-label')}`)}
+    ${comp('clock', 'Explore clock distribution and timing', `${line('M480 224V302 M480 264H295V309 M480 264H668V309 M295 287H228V317 M295 287H367V317 M668 287H601V317 M668 287H734V317', 'scene-clock-tree')}${dot(480, 224, 5, 'scene-clock-root')}${hint(486, 282)}`)}
+    ${comp('power', 'Explore the power distribution network', `${[218, 288, 358, 428, 498, 568].map(y => line(`M170 ${y}H789`, 'scene-power-grid')).join('')}${[176, 270, 364, 458, 552, 646, 740].map(x => line(`M${x} 219V594`, 'scene-power-grid')).join('')}${hint(777, 577)}`)}
+    ${tag(152, 664, 'PLACEMENT')}${tag(325, 664, 'ROUTING')}${tag(477, 664, 'TIMING')}${tag(618, 664, 'POWER')}
+    ${bottom('PHYSICAL RESULTS FEED BACK INTO RTL & ARCHITECTURE', 'ILLUSTRATIVE ROUTES · NO ETCHED MEASUREMENTS')}`;
+}
+function tapeoutScene() {
+  const waferCells = [];
+  for (let row = -4; row <= 4; row += 1) for (let col = -4; col <= 4; col += 1) {
+    if ((row * row + col * col) < 18) waferCells.push(rect(505 + col * 24, 360 + row * 27, 20, 23, `scene-wafer-die ${((row + col) % 6 === 0) ? 'scene-wafer-die-highlight' : ''}`, 1));
+  }
+  return `${title(8, 'Tapeout to silicon', 'The signed-off design becomes something physical.')}
+    ${comp('tapeout', 'Explore tapeout and the released manufacturing layout', `${rect(92, 288, 219, 239, 'scene-layout-sheet', 4)}${rect(109, 305, 185, 169, 'scene-sheet-layout', 2)}${smallCells(123, 320, 5, 5, 25, 23, 6, 'scene-sheet-cell')}${text(110, 504, 'LAYOUT RELEASE', 'scene-mono scene-block-label')}${hint(288, 312)}`)}
+    ${comp('wafer', 'Explore fabrication and silicon wafers', `<circle cx="515" cy="383" r="150" class="scene-wafer" fill="url(#__ID__-wafer)"/><circle cx="515" cy="383" r="139" class="scene-wafer-inner"/>${waferCells.join('')}<path d="M502 530l13 -10l13 10" class="scene-wafer-notch"/>${hint(619, 285)}`)}
+    ${comp('package', 'Explore packaging, testing, and bring-up', `<path d="M744 343l34 -22h133l-34 22Z" class="scene-substrate-top"/>${rect(744, 343, 133, 132, 'scene-substrate', 2)}<path d="M877 343l34 -22v133l-34 21Z" class="scene-substrate-side"/>${die(775, 363, 72, 72)}${memoryStack(748, 369, '', .28)}${memoryStack(854, 369, '', .28)}${hint(885, 455)}`)}
+    ${arrow('M319 393H350')}${arrow('M675 393H721')}
+    ${text(202, 579, 'Tapeout', 'scene-large-label', 'middle')}${text(202, 610, 'Signed-off layout + data', 'scene-body-label', 'middle')}${text(515, 579, 'Fabrication', 'scene-large-label', 'middle')}${text(515, 610, 'Manufactured silicon', 'scene-body-label', 'middle')}${text(826, 579, 'Packaging + test', 'scene-large-label', 'middle')}${text(826, 610, 'Then silicon bring-up', 'scene-body-label', 'middle')}
+    ${bottom('TAPEOUT CLOSES DESIGN · SILICON STILL NEEDS VALIDATION', 'ILLUSTRATIVE MANUFACTURING SEQUENCE')}`;
+}
+function racksFinal() {
+  return `${title(9, 'Back to the rack', 'The complete system must deliver the intended experience.')}
+    <ellipse cx="499" cy="673" rx="386" ry="29" class="scene-ground"/>
+    ${comp('rack', 'Explore the deployed multi-rack inference system', `${rack(84, 300, .68, { muted: true })}${rack(391, 237, .84)}${rack(716, 300, .68, { muted: true })}`)}
+    ${comp('links', 'Explore multi-chip communication and latency', `${flow('M267 374H350Q368 374 368 359V346H409', 'rack-link-a')}${flow('M617 346H658Q674 346 674 364V374H732', 'rack-link-b')}${flow('M267 466H340Q358 466 358 478V499H409', 'rack-link-c')}${flow('M617 499H666Q684 499 684 483V466H732', 'rack-link-d')}${text(500, 180, 'COMPUTE + MEMORY + INTERCONNECT', 'scene-mono scene-accent-label', 'middle')}${hint(680, 413)}`)}
+    ${comp('cooling', 'Explore sustained power and cooling requirements', `${line('M73 646H925', 'scene-cooling-manifold')}${line('M131 646V619 M438 646V630 M763 646V619', 'scene-cooling-branch')}${text(501, 705, 'Power and cooling set the operating envelope.', 'scene-body-label', 'middle')}${hint(922, 646)}`)}
+    ${bottom('LATENCY · THROUGHPUT · RELIABILITY · EFFICIENCY', 'ILLUSTRATIVE SYSTEM')}`;
+}
+function aiScene() {
+  const nodes = [
+    { x: 94, y: 206, w: 226, h: 118, label: 'SPECIFICATION', sub: 'Intent + interfaces', id: 'specification', cls: 'scene-control' },
+    { x: 680, y: 206, w: 226, h: 118, label: 'RTL', sub: 'Logic + implementation', id: 'compute', cls: 'scene-compute' },
+    { x: 94, y: 488, w: 226, h: 118, label: 'VERIFICATION', sub: 'Tests + coverage', id: 'testbench', cls: 'scene-reference' },
+    { x: 680, y: 488, w: 226, h: 118, label: 'PHYSICAL DESIGN', sub: 'Area + timing + power', id: 'cells', cls: 'scene-control' },
+  ];
+  return `${title(10, 'AI across the process', 'Connect a proposed change to the evidence it needs.')}
+    ${nodes.map(n => comp(n.id, `Explore ${n.label.toLowerCase()} and cross-team coordination`, `${rect(n.x, n.y, n.w, n.h, n.cls, 5)}${text(n.x + 20, n.y + 42, n.label, 'scene-mono scene-block-label')}${text(n.x + 20, n.y + 75, n.sub, 'scene-body-label')}${hint(n.x + n.w - 22, n.y + n.h - 22)}`)).join('')}
+    ${comp('ai', 'Explore AI assistance and proposed coordination tools', `<circle cx="500" cy="406" r="100" class="scene-ai-ring"/><circle cx="500" cy="406" r="86" class="scene-ai-core"/>${text(500, 391, 'AI ASSISTANCE', 'scene-mono scene-block-label', 'middle')}${text(500, 423, 'Trace a format change', 'scene-body-label', 'middle')}${text(500, 449, 'Keep evidence connected', 'scene-body-label', 'middle')}${hint(568, 346)}`)}
+    ${flow('M320 265H373V347H420', 'ai-spec')}${flow('M580 347H627V265H680', 'ai-rtl')}${flow('M320 548H373V465H420', 'ai-dv')}${flow('M580 465H627V548H680', 'ai-pd')}
+    ${text(500, 677, 'Implementation support today. Better coordination is an opportunity.', 'scene-body-label', 'middle')}
+    ${bottom('PROPOSALS STILL NEED ENGINEERING REVIEW & VALIDATION', 'CURRENT FOCUS & PROPOSED USES DISTINGUISHED IN THE STORY')}`;
+}
+
+const chapterBuilders = [rackOpening, packageScene, architectureScene, quantizationScene, microScene, verificationScene, physicalScene, tapeoutScene, racksFinal, aiScene];
+
+/** A dependency-free, accessible SVG stage for the chip design story. */
+export function createScene(host, callbacks = {}) {
+  const prefix = `etched-scene-${++sceneSequence}`;
+  const svgMarkup = `<svg class="etched-scene" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Interactive diagrams of Etched’s chip design process">
+    <title>From an AI request to silicon and back</title><desc>Ten conceptual engineering diagrams. Select a labeled component to read its role and tradeoffs.</desc>
+    <defs>
+      <pattern id="__ID__-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".85" fill="#aeb5a8" opacity=".33"/></pattern>
+      <marker id="__ID__-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#e95932" stroke-width="1.5"/></marker>
+      <linearGradient id="__ID__-wafer" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e4e9e0"/><stop offset=".45" stop-color="#b4c0ae"/><stop offset="1" stop-color="#eff0e9"/></linearGradient>
+    </defs>
+    <rect width="1000" height="800" fill="#f4f3ed"/><rect x="37" y="117" width="926" height="600" fill="url(#__ID__-grid)"/>
+    <path d="M37 128v-11h11 M952 117h11v11 M37 706v11h11 M952 717h11v-11" class="scene-corner"/>
+    ${chapterBuilders.map((builder, i) => `<g class="scene-layer ${i === 0 ? 'is-active' : ''}" data-scene="${i}" aria-hidden="${i !== 0}"><g class="scene-camera">${builder()}</g></g>`).join('')}
+  </svg>`;
+  host.innerHTML = svgMarkup.replaceAll('__ID__', prefix);
+  host.classList.add('scene-host', 'scene-is-playing');
+  const svg = host.querySelector('svg');
+  const layers = [...host.querySelectorAll('[data-scene]')];
+  let activeIndex = 0;
+  let selected = '';
+  let playing = true;
+  let frame = 0;
+  let lastTime = 0;
+  let travel = 0;
+  let destroyed = false;
+  let hovered = null;
+  let transitionTimer = 0;
+  let cameraResetTimer = 0;
+  let focusedCamera = null;
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const particles = [...host.querySelectorAll('[data-path]')].map(node => {
+    const path = host.querySelector(`#${node.dataset.path}`);
+    return { node, path, length: path.getTotalLength(), chapter: Number(node.closest('[data-scene]').dataset.scene) };
+  });
+  const setTabStops = () => layers.forEach((layer, i) => layer.querySelectorAll('[data-component]').forEach(node => node.setAttribute('tabindex', i === activeIndex ? '0' : '-1')));
+  setTabStops();
+  function updateComponentFocus() {
+    clearTimeout(cameraResetTimer);
+    if (focusedCamera) {
+      const restoringCamera = focusedCamera;
+      restoringCamera.style.transition = motionPreference.matches ? 'none' : 'transform 500ms cubic-bezier(.22,.65,.25,1)';
+      restoringCamera.style.removeProperty('transform');
+      restoringCamera.style.removeProperty('transform-origin');
+      cameraResetTimer = setTimeout(() => restoringCamera.style.removeProperty('transition'), motionPreference.matches ? 0 : 520);
+      focusedCamera = null;
+    }
+    if (!selected) return;
+    const component = [...layers[activeIndex].querySelectorAll('[data-component]')].find(node => node.dataset.component === selected);
+    if (!component) return;
+    const bounds = component.getBBox();
+    if (!bounds.width || !bounds.height) return;
+    const mobile = window.matchMedia('(max-width: 760px)').matches;
+    const scale = Math.max(1, Math.min(mobile ? 1.9 : 1.65, 840 / bounds.width, 640 / bounds.height));
+    // Wide system-level components already fill the diagram; keep their context visible.
+    if (scale < 1.08) return;
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+    const camera = layers[activeIndex].querySelector('.scene-camera');
+    clearTimeout(cameraResetTimer);
+    camera.style.transition = motionPreference.matches ? 'none' : 'transform 600ms cubic-bezier(.22,.65,.25,1)';
+    camera.style.transformOrigin = '500px 400px';
+    camera.style.transform = `translate(${scale * (500 - centerX)}px, ${scale * (400 - centerY)}px) scale(${scale})`;
+    focusedCamera = camera;
+  }
+  function animate(time) {
+    frame = 0;
+    if (destroyed || !playing || motionPreference.matches || document.hidden) return;
+    travel += Math.min(time - (lastTime || time), 40) * .00018;
+    lastTime = time;
+    particles.forEach(({ node, path, length, chapter }, i) => {
+      if (chapter !== activeIndex) return;
+      const p = path.getPointAtLength(((travel + i * .17) % 1) * length);
+      node.setAttribute('cx', p.x); node.setAttribute('cy', p.y);
+    });
+    frame = requestAnimationFrame(animate);
+  }
+  function updateMotion() {
+    host.classList.toggle('scene-is-playing', playing && !motionPreference.matches);
+    host.classList.toggle('scene-reduced-motion', motionPreference.matches);
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0; lastTime = 0;
+    if (playing && !motionPreference.matches && !document.hidden) frame = requestAnimationFrame(animate);
+  }
+  function componentFromEvent(event) {
+    const node = event.target.closest?.('[data-component]');
+    return node && Number(node.closest('[data-scene]').dataset.scene) === activeIndex ? node : null;
+  }
+  function onClick(event) { const node = componentFromEvent(event); if (node) callbacks.onSelect?.(node.dataset.component); }
+  function onKeydown(event) { if (event.key !== 'Enter' && event.key !== ' ') return; const node = componentFromEvent(event); if (node) { event.preventDefault(); callbacks.onSelect?.(node.dataset.component); } }
+  function onHover(event) {
+    const node = componentFromEvent(event);
+    if (node === hovered) return;
+    hovered?.classList.remove('is-hovered');
+    hovered = node;
+    if (node) { node.classList.add('is-hovered'); callbacks.onHover?.(node.dataset.component, event); }
+    else callbacks.onLeave?.();
+  }
+  function onLeave() { hovered?.classList.remove('is-hovered'); hovered = null; callbacks.onLeave?.(); }
+  svg.addEventListener('click', onClick);
+  svg.addEventListener('keydown', onKeydown);
+  svg.addEventListener('pointerover', onHover);
+  svg.addEventListener('pointerleave', onLeave);
+  svg.addEventListener('focusin', onHover);
+  svg.addEventListener('focusout', onLeave);
+  motionPreference.addEventListener('change', updateMotion);
+  document.addEventListener('visibilitychange', updateMotion);
+  updateMotion();
+  return {
+    setChapter(index, progress = 0) {
+      const next = Math.max(0, Math.min(chapterBuilders.length - 1, Math.round(Number(index) || 0)));
+      if (next !== activeIndex) {
+        const leavingLayer = layers[activeIndex];
+        const zoomingIn = next > activeIndex && next < 7;
+        layers.forEach(layer => layer.classList.remove('is-leaving', 'is-arriving'));
+        host.classList.toggle('scene-zooming-out', !zoomingIn);
+        leavingLayer.classList.add('is-leaving');
+        activeIndex = next;
+        layers.forEach((layer, i) => { layer.classList.toggle('is-active', i === activeIndex); layer.setAttribute('aria-hidden', i !== activeIndex ? 'true' : 'false'); });
+        layers[activeIndex].classList.add('is-arriving');
+        clearTimeout(transitionTimer);
+        transitionTimer = setTimeout(() => layers.forEach(layer => layer.classList.remove('is-leaving', 'is-arriving')), 700);
+        setTabStops(); onLeave();
+        if (selected) updateComponentFocus();
+      }
+      const p = Math.max(0, Math.min(1, Number(progress) || 0));
+      layers[activeIndex].querySelector('.scene-camera').style.setProperty('--scene-pan', `${p * -4}px`);
+      layers[activeIndex].querySelector('.scene-camera').style.setProperty('--scene-zoom', 1 + p * .009);
+    },
+    selectComponent(id) {
+      selected = id || '';
+      host.querySelectorAll('[data-component]').forEach(node => {
+        const isSelected = node.dataset.component === selected;
+        node.classList.toggle('is-selected', isSelected);
+        node.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+      updateComponentFocus();
+    },
+    setPlaying(value) { playing = Boolean(value); updateMotion(); },
+    setVerificationFault(value) {
+      const fault = Boolean(value);
+      host.classList.toggle('scene-has-fault', fault);
+      host.querySelector('.scene-compare-symbol').textContent = fault ? '≠' : '=';
+      host.querySelectorAll('.scene-dv-fault').forEach(node => node.setAttribute('aria-hidden', String(!fault)));
+      host.querySelectorAll('.scene-dv-pass').forEach(node => node.setAttribute('aria-hidden', String(fault)));
+    },
+    destroy() {
+      destroyed = true;
+      clearTimeout(transitionTimer);
+      clearTimeout(cameraResetTimer);
+      cancelAnimationFrame(frame);
+      motionPreference.removeEventListener('change', updateMotion);
+      document.removeEventListener('visibilitychange', updateMotion);
+      svg.removeEventListener('click', onClick); svg.removeEventListener('keydown', onKeydown);
+      svg.removeEventListener('pointerover', onHover); svg.removeEventListener('pointerleave', onLeave);
+      svg.removeEventListener('focusin', onHover); svg.removeEventListener('focusout', onLeave);
+      host.innerHTML = '';
+    },
+  };
+}

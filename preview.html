@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f5ef" />
+    <meta name="description" content="Explore the design of an inference chip through interactive diagrams, from the server rack to architecture, RTL, verification, physical design, and silicon." />
+    <title>Inside the chip — Etched visual explorer</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23e95932'/%3E%3Cpath d='M10 13h20M10 20h14M10 27h20' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E" />
+    <style>
+@layer reset, diagram, base, layout, components, responsive;
+@layer reset {
+  *, *::before, *::after { box-sizing:border-box; }
+  body,h1,h2,h3,p,ol,dl,dd { margin:0; }
+  button { font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  button:disabled { cursor:default; }
+  [hidden] { display:none !important; }
+}
+@layer base {
+  :root { --paper:#f6f5ef; --ink:#252824; --muted:#636d5b; --line:#d9ddcf; --orange:#e95932; --header:76px; --footer:91px; color-scheme:light; }
+  html { scroll-behavior:smooth; }
+  body { color:var(--ink); background:var(--paper); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; text-underline-offset:4px; }
+  :focus-visible { outline:2px solid var(--orange); outline-offset:4px; border-radius:3px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  .eyebrow { color:var(--orange); font:500 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.08em; text-transform:uppercase; }
+  ::selection { background:#f8c6b7; }
+}
+@layer layout {
+  .site-header { position:fixed; top:0; left:0; right:0; height:var(--header); z-index:50; display:flex; align-items:center; gap:29px; padding:0 3.6vw; border-bottom:1px solid var(--line); background:rgba(246,245,239,.97); }
+  .wordmark { font-size:39px; font-weight:760; letter-spacing:-2.5px; line-height:1; text-decoration:none; }
+  .wordmark span { color:var(--orange); }
+  .site-title { padding-left:27px; border-left:1px solid var(--line); }
+  .site-title h1 { font-size:15px; font-weight:550; letter-spacing:-.025em; margin-bottom:4px; }
+  .site-title > span { color:var(--muted); font:8px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.07em; }
+  .header-actions { margin-left:auto; display:flex; align-items:center; gap:31px; }
+  .scroll-cue { color:var(--muted); font-size:11px; }
+  .scroll-cue > span { color:var(--orange); margin-left:11px; }
+  .journey-progress { position:fixed; left:0; right:0; top:calc(var(--header) - 1px); height:2px; z-index:55; pointer-events:none; }
+  .journey-progress > span { display:block; height:100%; width:100%; transform:scaleX(0); transform-origin:left; background:var(--orange); }
+  .visual-explorer { position:fixed; z-index:10; inset:var(--header) 3.6vw var(--footer); display:flex; flex-direction:column; }
+  .view-heading { flex:0 0 auto; padding:27px 0 0; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; }
+  .view-heading h2 { font-size:clamp(24px,2.6vw,37px); line-height:1.1; letter-spacing:-.045em; font-weight:510; margin:6px 0 8px; }
+  .view-heading p { font-size:12px; line-height:1.6; color:var(--muted); max-width:750px; }
+  .view-count { display:flex; align-items:baseline; gap:9px; padding-top:15px; font:12px ui-monospace,SFMono-Regular,Menlo,monospace; color:#7e8974; }
+  .view-count #view-number { font-size:27px; font-weight:400; color:var(--orange); letter-spacing:-.065em; }
+  .visual-canvas-wrap { position:relative; flex:1 1 auto; min-height:0; padding-top:8px; }
+  .scene-canvas { position:absolute; inset:7px 0 0; transition:right 420ms ease; background:var(--paper) !important; }
+  .scene-canvas > svg { display:block; height:100%; width:100%; }
+  .scene-canvas .scene-topline,.scene-canvas .scene-footline { display:none; }
+  .visual-explorer.has-inspector .scene-canvas { right:345px; }
+  .visual-toolbar { flex:0 0 auto; min-height:30px; display:flex; align-items:center; justify-content:space-between; gap:15px; padding:7px 0 0; color:var(--muted); font:9px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .toolbar-actions { display:flex; align-items:center; gap:23px; }
+  .concept-label { font-size:8px; letter-spacing:.05em; }
+  .component-strip { flex:0 0 auto; display:flex; justify-content:center; gap:6px; overflow-x:auto; padding:12px 0 17px; scrollbar-width:thin; }
+  .journey-footer { position:fixed; z-index:40; left:3.6vw; right:3.6vw; bottom:0; height:var(--footer); display:flex; align-items:center; gap:17px; border-top:1px solid var(--line); background:var(--paper); }
+  .chapter-nav { display:flex; flex:1; overflow-x:auto; gap:3px; padding:9px 0; scrollbar-width:none; }
+  .chapter-nav::-webkit-scrollbar { display:none; }
+  .scroll-track { position:relative; pointer-events:none; z-index:0; }
+  .scroll-step { height:100svh; }
+  .inspector { position:absolute; z-index:25; right:0; top:20px; width:317px; max-height:calc(100% - 30px); overflow-y:auto; padding:19px 21px 24px; background:#fafbf5; border:1px solid #cdd5c2; border-radius:8px; box-shadow:0 12px 40px #36482909; }
+  .inspector-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .inspector h3 { font-size:24px; line-height:1.13; font-weight:530; letter-spacing:-.035em; margin:12px 0; }
+  .inspector > p { color:#5c6853; font-size:12px; line-height:1.8; }
+  .inspector dl { margin-top:20px; }
+  .inspector dt { color:#697a5d; font:500 9px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; letter-spacing:.05em; margin-top:14px; }
+  .inspector dd { color:#5c6853; font-size:11px; line-height:1.8; margin-top:5px; }
+}
+@layer components {
+  .skip-link { position:fixed; left:20px; top:-80px; z-index:100; padding:12px; background:var(--ink); color:white; }
+  .skip-link:focus { top:12px; }
+  .text-button { padding:8px 0; background:transparent; border:0; font-size:11px; }
+  .text-button:hover { color:var(--orange); }
+  .motion-button,.fault-button { display:flex; align-items:center; gap:7px; background:transparent; border:0; padding:6px 0; font:inherit; }
+  .motion-button { min-width:54px; }
+  .motion-button:hover,.fault-button:hover { color:var(--orange); }
+  .motion-button:disabled { opacity:.75; }
+  .fault-button { color:#b94b2b; text-decoration:underline; text-underline-offset:4px; }
+  .component-chip { flex:0 0 auto; background:transparent; border:1px solid #cbd3bf; border-radius:25px; padding:7px 11px; font-size:10px; color:#586a4a; display:flex; align-items:center; gap:11px; }
+  .component-chip::after { content:'+'; color:#7b916a; font-size:13px; }
+  .component-chip:hover,.component-chip[aria-pressed=true] { border-color:var(--orange); color:var(--orange); background:#e9593207; }
+  .view-arrow { display:grid; place-items:center; flex:0 0 37px; height:39px; background:transparent; border:1px solid #d2d8c8; border-radius:50%; font-size:19px; line-height:1; }
+  .view-arrow:disabled { opacity:.3; }
+  .view-arrow:not(:disabled):hover { border-color:var(--orange); color:var(--orange); }
+  .chapter-nav button { flex:1 0 74px; position:relative; padding:13px 5px 10px; min-height:57px; border:0; background:transparent; border-radius:4px; text-align:center; }
+  .chapter-nav button::before { position:absolute; content:''; top:1px; left:12px; right:12px; height:2px; background:#d3dac8; }
+  .chapter-nav .nav-number { display:block; margin-bottom:8px; color:#728267; font:9px/1 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .chapter-nav .nav-label { display:block; color:#56664a; font-size:10px; line-height:1.3; white-space:nowrap; }
+  .chapter-nav button[aria-current=step]::before { background:var(--orange); }
+  .chapter-nav button[aria-current=step] .nav-number,.chapter-nav button[aria-current=step] .nav-label { color:var(--orange); }
+  .chapter-nav button:hover { background:#e9593206; }
+  .icon-button { background:transparent; border:0; width:26px; height:26px; padding:0; color:#617252; font-size:23px; line-height:1; }
+  .component-tooltip { position:fixed; z-index:70; width:235px; padding:13px 15px; color:#fafbf5; background:#262d23; border:1px solid #59644f; border-radius:6px; box-shadow:0 5px 25px #1f2b191f; pointer-events:none; }
+  .component-tooltip strong { display:block; font-size:12px; font-weight:550; margin-bottom:5px; }
+  .component-tooltip > span { display:block; font-size:10px; line-height:1.65; color:#d6dfcc; }
+  .component-tooltip small { display:block; margin-top:8px; font:8px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; text-transform:uppercase; color:#f9a085; letter-spacing:.05em; }
+  .sources-dialog { width:min(540px,calc(100vw - 32px)); max-height:80svh; padding:27px 29px; color:var(--ink); background:#fafbf6; border:1px solid #cdd5c2; border-radius:10px; }
+  .sources-dialog::backdrop { background:#18241250; backdrop-filter:blur(4px); }
+  .dialog-heading { display:flex; justify-content:space-between; gap:20px; }
+  .dialog-heading h2 { font-size:27px; font-weight:500; letter-spacing:-.035em; margin:10px 0 15px; }
+  .sources-dialog > p { color:var(--muted); font-size:12px; line-height:1.8; }
+  .source-links { list-style:none; padding:20px 0 0; counter-reset:source; }
+  .source-links li { counter-increment:source; border-bottom:1px solid var(--line); }
+  .source-links a { display:flex; align-items:center; gap:14px; padding:11px 0; font-size:11px; line-height:1.7; text-decoration:none; }
+  .source-links a::before { content:counter(source,decimal-leading-zero); color:var(--orange); font:9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .source-links a::after { content:'↗'; margin-left:auto; }
+  .no-script { position:fixed; inset:50% 20% auto; z-index:100; padding:20px; background:var(--paper); border:1px solid var(--line); text-align:center; }
+}
+@layer responsive {
+  @media (max-width:1100px) { .chapter-nav button { flex-basis:82px; } .chapter-nav .nav-label { font-size:9px; } .visual-explorer.has-inspector .scene-canvas { right:310px; } .inspector { width:290px; } .component-strip { justify-content:flex-start; } }
+  @media (max-width:760px) {
+    :root { --header:64px; --footer:83px; }
+    .site-header { padding:0 18px; gap:17px; }
+    .wordmark { font-size:31px; }
+    .site-title { padding-left:16px; }
+    .site-title h1 { font-size:13px; margin-bottom:3px; }
+    .site-title > span { font-size:6px; letter-spacing:.01em; }
+    .header-actions { gap:0; }
+    .scroll-cue { display:none; }
+    .text-button { font-size:10px; }
+    .visual-explorer { left:17px; right:17px; }
+    .view-heading { padding-top:23px; min-height:126px; }
+    .eyebrow { font-size:8px; }
+    .view-heading h2 { font-size:29px; margin:6px 0 9px; }
+    .view-heading p { max-width:275px; padding-right:8px; font-size:11px; line-height:1.7; }
+    .view-count { position:relative; padding-top:14px; font-size:8px; gap:6px; }
+    .view-count::after { content:'CONCEPTUAL'; position:absolute; top:46px; right:0; color:var(--muted); font-size:6px; letter-spacing:.04em; }
+    .view-count #view-number { font-size:22px; }
+    .visual-canvas-wrap { padding-top:0; }
+    .scene-canvas,.visual-explorer.has-inspector .scene-canvas { inset:0 -10px; }
+    .visual-explorer.has-inspector .scene-canvas { bottom:min(235px,28svh); }
+    .scene-canvas > svg { width:100%; height:100%; }
+    .visual-toolbar { min-height:33px; font-size:8px; gap:7px; }
+    .toolbar-actions { gap:12px; }
+    .concept-label { display:none; }
+    .component-strip { padding:10px 0 16px; gap:6px; }
+    .component-chip { min-height:35px; padding:8px 12px; font-size:9px; }
+    .journey-footer { left:17px; right:17px; gap:10px; }
+    .view-arrow { flex-basis:30px; height:33px; font-size:16px; }
+    .chapter-nav { gap:1px; }
+    .chapter-nav button { flex:0 0 87px; min-height:54px; padding:11px 5px 7px; }
+    .chapter-nav .nav-label { font-size:9px; }
+    .chapter-nav .nav-number { font-size:8px; }
+    .inspector { position:fixed; top:auto; bottom:calc(var(--footer) + 12px); left:12px; right:12px; width:auto; max-height:min(38svh,330px); padding:17px 20px 23px; box-shadow:0 -5px 50px #1a291a26; }
+    .inspector h3 { font-size:22px; margin:9px 0; }
+    .inspector > p { font-size:12px; line-height:1.8; }
+    .inspector dl { display:grid; grid-template-columns:52px 1fr; gap:7px 11px; margin-top:15px; }
+    .inspector dt,.inspector dd { margin:0; }
+    .inspector dd { font-size:11px; }
+    .component-tooltip { display:none !important; }
+  }
+  @media (max-height:650px) and (min-width:761px) { .view-heading { padding-top:14px; } .view-heading h2 { font-size:26px; } .view-heading p { font-size:11px; } .component-strip { padding:5px 0 8px; } :root { --footer:78px; --header:65px; } }
+  @media (max-width:370px) { .site-title > span { display:none; } .site-title h1 { margin:0; font-size:12px; } .site-header { gap:14px; padding:0 14px; } .site-title { padding-left:13px; } .view-heading p { max-width:240px; } }
+  @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; } }
+}
+
+@layer diagram {
+.scene-host { width: 100%; position: relative; overflow: hidden; background: #f4f3ed; isolation: isolate; }
+.etched-scene { display: block; width: 100%; height: auto; max-height: 100%; font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Arial, sans-serif); color: #252824; -webkit-tap-highlight-color: transparent; }
+.etched-scene text { fill: #252824; user-select: none; }
+.scene-layer { opacity: 0; pointer-events: none; transform: translateY(10px) scale(.975); transform-origin: 50% 50%; transition: opacity 420ms ease, transform 650ms cubic-bezier(.22,.65,.25,1); }
+.scene-layer.is-active { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+.scene-layer.is-leaving { transform: scale(1.12); }
+.scene-layer.is-arriving { animation: scene-arrive-in 650ms cubic-bezier(.22,.65,.25,1) both; }
+.scene-zooming-out .scene-layer.is-leaving { transform: scale(.9); }
+.scene-zooming-out .scene-layer.is-arriving { animation-name: scene-arrive-out; }
+.scene-camera { transform: translateY(var(--scene-pan, 0px)) scale(var(--scene-zoom, 1)); transform-origin: 50% 50%; transition: transform 90ms linear; }
+.scene-mono { font-family: var(--font-mono, 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace); letter-spacing: .045em; }
+.scene-eyebrow { font-size: 15px; fill: #697265 !important; font-weight: 500; letter-spacing: .12em; }
+.scene-subtitle { font-size: 23px; font-weight: 450; letter-spacing: -.025em; }
+.scene-caption { font-size: 11px; fill: #737b70 !important; letter-spacing: .04em; }
+.scene-footline .scene-caption { font-size: 10.3px; }
+.scene-large-label { font-size: 23px; font-weight: 500; letter-spacing: -.035em; }
+.scene-body-label { font-size: 17px; fill: #65705f !important; letter-spacing: -.015em; }
+.scene-block-label { font-size: 15px; font-weight: 550; letter-spacing: .025em; }
+.scene-label { font-size: 20px; }
+.scene-muted { fill: #6b7565 !important; font-size: 14px; }
+.scene-accent-label { fill: #d65430 !important; font-size: 14px; font-weight: 600; }
+.scene-hairline, .scene-corner { fill: none; stroke: #c9cdc0; stroke-width: 1; }
+.scene-ground { fill: #dce0d5; opacity: .55; }
+.scene-component { cursor: pointer; outline: none; }
+.scene-component > rect, .scene-component > path, .scene-component > circle, .scene-component > g { transition: filter 180ms ease, stroke 180ms ease, fill 180ms ease; }
+.scene-component.is-hovered, .scene-component:focus-visible { filter: drop-shadow(0 0 7px rgb(233 89 50 / .2)); }
+.scene-component:focus-visible > rect:first-child, .scene-component:focus-visible > path:first-child, .scene-component:focus-visible > circle:first-child { stroke: #d34d28; stroke-width: 3; stroke-dasharray: 5 4; }
+.scene-component.is-selected { filter: drop-shadow(0 0 6px rgb(233 89 50 / .24)); }
+.scene-component.is-selected .scene-inspect-dot { fill: #e95932; stroke: #e95932; }
+.scene-component.is-selected .scene-inspect-plus { stroke: #fff; }
+.scene-inspect-dot { fill: #f4f3ed; stroke: #929c88; stroke-width: 1.3; }
+.scene-inspect-plus { fill: none; stroke: #68745e; stroke-width: 1.4; }
+.scene-wire { fill: none; stroke: #939f89; stroke-width: 2; }
+.scene-flow { fill: none; stroke: #e95932; stroke-width: 2.3; stroke-dasharray: 5 7; stroke-linecap: round; }
+.scene-particle { fill: #e95932; stroke: #f4f3ed; stroke-width: 1.5; opacity: 0; }
+.scene-is-playing .scene-layer.is-active .scene-particle { opacity: 1; }
+.scene-is-playing .scene-flow { animation: scene-dash 1.6s linear infinite; }
+.scene-arrow { fill: none; stroke: #e95932; stroke-width: 2.3; }
+.scene-callout { fill: none; stroke: #a8b09f; stroke-width: 1.2; }
+.scene-tag { fill: #e9ece2; stroke: #c6ceba; stroke-width: .8; }
+.scene-tag-label { fill: #5d6a53 !important; font-size: 12px; }
+.scene-node { fill: #e95932; }
+.scene-accent-fill { fill: #e95932; }
+.scene-sage-fill { fill: #87977b; }
+.scene-cell { fill: #b6c2a9; stroke: #8fa07e; stroke-width: .7; }
+.scene-cell-accent { fill: #d1b29b; }
+.scene-rack-frame { fill: #d0d7c7; stroke: #78876d; stroke-width: 1.5; }
+.scene-rack-face { fill: #b7c2ab; stroke: #7e8b73; stroke-width: .8; }
+.scene-rack-side { fill: #99a58f; stroke: #78876d; stroke-width: 1.5; }
+.scene-rack-top { fill: #e0e5d8; stroke: #8e9c82; stroke-width: 1.5; }
+.scene-rack-blade { fill: #e8ebdf; stroke: #89977c; stroke-width: .8; }
+.scene-rack-header { fill: #c4ceba; stroke: #8a987e; stroke-width: .8; }
+.scene-rack-small { font-size: 10px; fill: #59694c !important; }
+.scene-rack-seam { fill: none; stroke: #b8c3ae; stroke-width: 1; }
+.scene-vent { fill: #aab79e; }
+.scene-blade-port { fill: #bec9b3; stroke: #93a087; stroke-width: .8; }
+.scene-status { fill: #e95932; }
+.scene-fan-ring { fill: #c4ceba; stroke: #90a080; stroke-width: 1; }
+.scene-fan-spokes { stroke: #90a080; stroke-width: 1.2; }
+.scene-rack-screw { fill: #79896c; }
+.scene-rack-foot { fill: #7e8a74; }
+.scene-quiet-rack { opacity: .44; }
+.scene-cooling-pipe { fill: none; stroke: #9aa68f; stroke-width: 7; stroke-linecap: round; }
+.scene-cooling-branch { fill: none; stroke: #a9b59d; stroke-width: 4; }
+.scene-cooling-manifold { fill: none; stroke: #b5c0aa; stroke-width: 9; stroke-linecap: round; }
+.scene-substrate { fill: #d6ddcc; stroke: #8d9c7e; stroke-width: 1.5; }
+.scene-substrate-top { fill: #e8ecdf; stroke: #9ba88e; stroke-width: 1.3; }
+.scene-substrate-side { fill: #b9c6ab; stroke: #8d9c7e; stroke-width: 1.4; }
+.scene-package-pad { fill: #a9ad84; }
+.scene-package-trace { fill: none; stroke: #9fae90; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.scene-hbm-top { fill: #e1e5d8; stroke: #7f8d72; stroke-width: .7; }
+.scene-hbm-front { fill: #b0bfa2; stroke: #7f8d72; stroke-width: .7; }
+.scene-hbm-side { fill: #94a487; stroke: #7f8d72; stroke-width: .7; }
+.scene-hbm-label { fill: #586b4c !important; font-size: 13px; font-weight: 600; letter-spacing: .05em; }
+.scene-die-rim { fill: #a3b292; stroke: #7e8c6f; stroke-width: 1; }
+.scene-die { fill: #dfe5d5; stroke: #7b8b6c; stroke-width: 1.2; }
+.scene-compute-mini { fill: #df9a77; stroke: #c65e37; stroke-width: 1.2; opacity: .92; }
+.scene-die-label { font-size: 15px; font-weight: 600; fill: #713d29 !important; }
+.scene-die-route { fill: none; stroke: #8c9d7b; stroke-width: 2; }
+.scene-chip-boundary { fill: #eceee5; fill-opacity: .85; stroke: #9ba88f; stroke-width: 1.4; }
+.scene-compute { fill: #edb89b; stroke: #cf7650; stroke-width: 1.4; }
+.scene-compute-cell { fill: #e4a37d; stroke: #c7835d; stroke-width: .9; }
+.scene-memory-block { fill: #cbd7bf; stroke: #8e9f7e; stroke-width: 1.3; }
+.scene-memory-layer { fill: #dae3d0; stroke: #a3b294; stroke-width: 1; }
+.scene-storage { fill: #dce4d1; stroke: #99aa87; stroke-width: 1.3; }
+.scene-storage-cell { fill: #b8c7a7; stroke: #96aa81; stroke-width: .8; }
+.scene-control { fill: #e2e6d9; stroke: #a0ad90; stroke-width: 1.3; }
+.scene-conversion { fill: #e9decd; stroke: #baa88b; stroke-width: 1.3; }
+.scene-interface { fill: #d8e0ce; stroke: #9cae8a; stroke-width: 1.3; }
+.scene-bus { fill: none; stroke: #98a58b; stroke-width: 5; }
+.scene-format-card { fill: #ecefe5; stroke: #aebba1; stroke-width: 1.2; }
+.scene-format-output { fill: #f0e1d3; stroke: #d5ad8f; }
+.scene-number-cell { fill: #dbe4cf; stroke: #bdcbae; stroke-width: .7; }
+.scene-format-output .scene-number-cell { fill: #ecd0b9; stroke: #d5b195; }
+.scene-number-hot { fill: #c3d0b4; }
+.scene-format-output .scene-number-hot { fill: #e2af8a; }
+.scene-number { font-size: 12px; letter-spacing: -.06em; fill: #57664c !important; }
+.scene-format-output .scene-number { fill: #85533a !important; }
+.scene-format-total { font-size: 14px; }
+.scene-bracket { fill: none; stroke: #acb59f; stroke-width: 1.2; }
+.scene-datapath-block { fill: #dfe7d3; stroke: #9aae85; stroke-width: 1.5; }
+.scene-math-block { fill: #edb89b; stroke: #cf7650; }
+.scene-operation-symbol { font-size: 49px; font-weight: 400; fill: #536a42 !important; }
+.scene-math-block ~ text.scene-operation-symbol { fill: #9c4e2b !important; }
+.scene-datapath-small { font-size: 14px; fill: #6b735e !important; }
+.scene-clock-wire { fill: none; stroke: #9aaa8a; stroke-width: 1.2; stroke-dasharray: 3 4; }
+.scene-clock-wave { fill: none; stroke: #8b9c79; stroke-width: 1.8; }
+.scene-testbench-boundary { fill: #ebece3; fill-opacity: .62; stroke: #adb79f; stroke-width: 1.2; stroke-dasharray: 7 5; }
+.scene-test-source { fill: #dbe4cf; stroke: #a0b18b; stroke-width: 1.3; }
+.scene-reference { fill: #dde8d4; stroke: #97ae81; stroke-width: 1.3; }
+.scene-comparator { fill: #e9e4d5; stroke: #b6ab8f; stroke-width: 1.5; }
+.scene-compare-symbol { font-size: 48px; fill: #6f715c !important; }
+.scene-dv-fault { opacity: 0; transition: opacity 200ms; pointer-events: none; }
+.scene-dv-pass { opacity: 1; transition: opacity 200ms; }
+.scene-has-fault .scene-dv-fault { opacity: 1; }
+.scene-has-fault .scene-dv-pass { opacity: 0; }
+.scene-has-fault .scene-comparator { stroke: #d65d35; fill: #f0d4c2; }
+.scene-has-fault .scene-compare-symbol { fill: #bf4c28 !important; }
+.scene-feedback-wire { fill: none; stroke: #df784e; stroke-width: 1.7; stroke-dasharray: 4 4; }
+.scene-placed-cell { fill: #c6d2b8; stroke: #a5b596; stroke-width: .6; }
+.scene-placed-cell-dark { fill: #a8bb96; }
+.scene-compute-physical { fill: #e8b091; stroke: #c88661; stroke-width: 1; }
+.scene-physical-math-cell { fill: #dc9b74; stroke: #c78660; stroke-width: .6; }
+.scene-layout-route { fill: none; stroke: #849a70; stroke-width: 1.6; stroke-linejoin: round; }
+.scene-route-1 { stroke: #ab8963; }
+.scene-route-2 { stroke: #a0ad8c; stroke-width: 2.2; }
+.scene-congestion { fill: #e95932; fill-opacity: .08; stroke: #d9784f; stroke-width: 1.2; stroke-dasharray: 3 4; }
+.scene-clock-tree { fill: none; stroke: #85996d; stroke-width: 2.6; }
+.scene-clock-root { fill: #83956e; }
+.scene-power-grid { fill: none; stroke: #abb899; stroke-width: .7; opacity: .65; pointer-events: stroke; }
+.scene-layout-sheet { fill: #e9ece1; stroke: #a2af92; stroke-width: 1.2; }
+.scene-sheet-layout { fill: #c7d3bb; stroke: #91a27d; stroke-width: 1; }
+.scene-sheet-cell { fill: #aabb97; stroke: #8a9e74; stroke-width: .6; }
+.scene-wafer { stroke: #99aa88; stroke-width: 1.5; }
+.scene-wafer-inner { fill: none; stroke: #a3b494; stroke-width: .8; }
+.scene-wafer-die { fill: #c0cdb1; fill-opacity: .65; stroke: #81966d; stroke-width: .6; }
+.scene-wafer-die-highlight { fill: #dcaa83; stroke: #b67d52; }
+.scene-wafer-notch { fill: #f4f3ed; stroke: #99aa88; stroke-width: 1; }
+.scene-ai-ring { fill: none; stroke: #d3a98e; stroke-width: 1.3; stroke-dasharray: 2 7; }
+.scene-ai-core { fill: #f1d6c3; stroke: #d18d64; stroke-width: 1.3; }
+@keyframes scene-dash { to { stroke-dashoffset: -24; } }
+@keyframes scene-arrive-in { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: scale(1); } }
+@keyframes scene-arrive-out { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer, .scene-camera, .scene-component > rect, .scene-component > path, .scene-component > circle, .scene-component > g { transition: none; }
+  .scene-is-playing .scene-flow { animation: none; }
+  .scene-particle { display: none; }
+  .scene-layer.is-arriving { animation: none; }
+}
+.scene-reduced-motion .scene-layer, .scene-reduced-motion .scene-camera { transition: none; }
+.scene-reduced-motion .scene-flow { animation: none; }
+.scene-reduced-motion .scene-layer.is-arriving { animation: none; }
+
+}
+
+</style>
+<script type="module">
+const chapters = [
+  {
+    "id": "experience",
+    "kicker": "01 / System",
+    "title": "System",
+    "caption": "Follow an AI request into the infrastructure that turns model computation into a stream of tokens.",
+    "sceneTitle": "Start with the system",
+    "sceneSubtitle": "Conceptual request → server rack → response tokens.",
+    "componentIds": [
+      "rack",
+      "links",
+      "cooling"
+    ]
+  },
+  {
+    "id": "requirements",
+    "kicker": "02 / Package",
+    "title": "Package",
+    "caption": "Explore how compute, nearby HBM, and interfaces share a package shaped by workload requirements.",
+    "sceneTitle": "Inside the accelerator package",
+    "sceneSubtitle": "Compute die and HBM are distinct devices. Arrangement is illustrative.",
+    "componentIds": [
+      "specification",
+      "package",
+      "compute",
+      "hbm"
+    ]
+  },
+  {
+    "id": "architecture",
+    "kicker": "03 / Architecture",
+    "title": "Architecture",
+    "caption": "Trace data from memory through supporting functions to compute, then onward through the chip.",
+    "sceneTitle": "Follow the data",
+    "sceneSubtitle": "Select a block to inspect its role, inputs, outputs, and tradeoffs.",
+    "componentIds": [
+      "hbm",
+      "buffer",
+      "conversion",
+      "compute",
+      "control",
+      "interconnect",
+      "ai"
+    ]
+  },
+  {
+    "id": "quantization",
+    "kicker": "04 / Quantization",
+    "title": "Quantization",
+    "caption": "Compare 32 values at eight and four bits: smaller payloads reduce storage, with numerical tradeoffs.",
+    "sceneTitle": "One block, two representations",
+    "sceneSubtitle": "32 × 8 = 256 bits → 32 × 4 = 128 bits, before scales and metadata.",
+    "componentIds": [
+      "conversion",
+      "hbm",
+      "buffer",
+      "compute",
+      "ai"
+    ]
+  },
+  {
+    "id": "microarchitecture",
+    "kicker": "05 / Microarchitecture",
+    "title": "Microarchitecture",
+    "caption": "Follow an illustrative 32-bit value through registers, arithmetic, and the output interface, one clock cycle at a time.",
+    "sceneTitle": "Inside the math block",
+    "sceneSubtitle": "Input → register → multiply → add → output. Widths and timing are illustrative.",
+    "componentIds": [
+      "register",
+      "multiply",
+      "add",
+      "interface",
+      "power",
+      "ai"
+    ]
+  },
+  {
+    "id": "verification",
+    "kicker": "06 / Verification",
+    "title": "Verification",
+    "caption": "Compare observed results against independent expectations, investigate a mismatch, and test the corrected implementation.",
+    "sceneTitle": "Test the intended behavior",
+    "sceneSubtitle": "Specification → expected result. Testbench → observed result. Compare and retest.",
+    "componentIds": [
+      "testbench",
+      "reference",
+      "comparator",
+      "specification",
+      "interface",
+      "ai"
+    ]
+  },
+  {
+    "id": "physical-design",
+    "kicker": "07 / Physical design",
+    "title": "Physical design",
+    "caption": "Reveal cells, wiring, clocks, and power, then inspect the constraints that shape a realizable circuit.",
+    "sceneTitle": "From logic to physical layout",
+    "sceneSubtitle": "Stylized placement and routing. Physical design and verification proceed in parallel.",
+    "componentIds": [
+      "cells",
+      "routing",
+      "clock",
+      "power",
+      "conversion",
+      "compute",
+      "ai"
+    ]
+  },
+  {
+    "id": "tapeout",
+    "kicker": "08 / Tapeout",
+    "title": "Tapeout",
+    "caption": "Follow the signed-off layout through fabrication and packaging toward tested silicon.",
+    "sceneTitle": "Layout → wafer → package",
+    "sceneSubtitle": "A conceptual manufacturing sequence after design signoff.",
+    "componentIds": [
+      "tapeout",
+      "wafer",
+      "package"
+    ]
+  },
+  {
+    "id": "rack-scale",
+    "kicker": "09 / Rack systems",
+    "title": "Rack systems",
+    "caption": "Return to multiple chips, where communication, power, and cooling shape sustainable inference performance.",
+    "sceneTitle": "The chip returns to the system",
+    "sceneSubtitle": "Select compute, links, or cooling. Topology and traffic are illustrative.",
+    "componentIds": [
+      "rack",
+      "links",
+      "cooling",
+      "hbm",
+      "compute",
+      "power"
+    ]
+  },
+  {
+    "id": "ai-and-coordination",
+    "kicker": "10 / AI across engineering",
+    "title": "AI across engineering",
+    "caption": "Explore AI-assisted implementation and a proposed coordination workflow connecting requirements, code, tests, and physical findings.",
+    "sceneTitle": "Connect the engineering evidence",
+    "sceneSubtitle": "Explore implementation assistance and proposed feedback across teams.",
+    "componentIds": [
+      "ai",
+      "specification",
+      "compute",
+      "testbench",
+      "cells",
+      "rack"
+    ]
+  }
+];
+
+const components = {
+  compute: {
+    name: 'Compute / math unit', type: 'Architecture',
+    description: 'Arithmetic hardware performs the operations required by the intended models. Matrix multiplication is one important operation; model execution also needs supporting functions.',
+    why: 'The compute unit turns model values into results, but its useful rate depends on memory delivery and the surrounding data path.',
+    inputs: 'Operands, weights, activations, and control in the required formats.',
+    outputs: 'Arithmetic results for storage or the next block.',
+    tradeoff: 'More arithmetic capacity helps only if memory, interfaces, timing, area, and power can support it.', chapter: 2
+  },
+  hbm: {
+    name: 'High-bandwidth memory', type: 'Package memory',
+    description: 'HBM is stacked memory associated with the compute package. It is distinct from circuitry on the compute die.',
+    why: 'The model’s values require capacity, and computation requires a sufficient rate of data delivery.',
+    inputs: 'Memory requests and values to be stored.', outputs: 'Requested data, including weights and intermediate values.',
+    tradeoff: 'Capacity, bandwidth, access patterns, numerical format, and data movement must be considered together.', chapter: 2
+  },
+  buffer: {
+    name: 'Buffers / on-chip storage', type: 'Architecture',
+    description: 'Local storage holds data between arrival, transformation, computation, and transfer to another block.',
+    why: 'Blocks do not always produce and consume data at the same instant or rate.',
+    inputs: 'Values awaiting their next operation.', outputs: 'Values delivered when the consumer can accept them.',
+    tradeoff: 'More buffering uses area and power; insufficient buffering can create stalls or complicate scheduling.', chapter: 2
+  },
+  conversion: {
+    name: 'Conversion & rearrangement', type: 'Data preparation',
+    description: 'Supporting functions prepare numerical representations or layouts for the next operation. Quantization, dequantization, and a matrix transpose are different examples.',
+    why: 'Stored data may not already have the representation and layout the arithmetic hardware needs.',
+    inputs: 'Values, format information, and any required scales or metadata.', outputs: 'Values in the required numerical representation or arrangement.',
+    tradeoff: 'Conversion must maintain required numerical behavior while keeping pace with the data path.', chapter: 3
+  },
+  interconnect: {
+    name: 'On-chip connections', type: 'Architecture',
+    description: 'Connections and interfaces carry data and control between the chip’s functional blocks.',
+    why: 'A fast isolated block does not make a fast system unless its neighbors can exchange work efficiently.',
+    inputs: 'Data and control from producing blocks.', outputs: 'Data and control delivered to consuming blocks.',
+    tradeoff: 'Widths, rates, ordering, buffering, flow control, and physical wiring must agree.', chapter: 2
+  },
+  control: {
+    name: 'Control', type: 'Architecture',
+    description: 'Control coordinates when data is valid, when operations occur, and how blocks respond to changing conditions.',
+    why: 'Arithmetic and storage need a complete operating protocol, including stalls and downstream backpressure.',
+    inputs: 'Operation state and interface conditions.', outputs: 'Signals coordinating computation, storage, and transfer.',
+    tradeoff: 'Control must cover required situations without creating unnecessary complexity or limiting throughput.', chapter: 2
+  },
+  register: {
+    name: 'Register', type: 'Microarchitecture',
+    description: 'A register holds data across clock cycles. The example register is part of an illustrative 32-bit datapath.',
+    why: 'Stored values and pipeline boundaries let the circuit organize work over time.',
+    inputs: 'A value and the control required to capture it.', outputs: 'The stored value for a subsequent operation.',
+    tradeoff: 'Additional registers may improve timing while increasing area, clock load, routing, latency, and power.', chapter: 4
+  },
+  multiply: {
+    name: 'Multiplication', type: 'Microarchitecture',
+    description: 'An arithmetic stage multiplies operands under the specified width and numerical rules.',
+    why: 'The required mathematical behavior must become a circuit that meets the target operating rate.',
+    inputs: 'Operands with defined formats and valid-data conditions.', outputs: 'A product with a specified representation.',
+    tradeoff: 'Arithmetic width, pipeline organization, timing, numerical behavior, area, and power interact.', chapter: 4
+  },
+  add: {
+    name: 'Addition', type: 'Microarchitecture',
+    description: 'This illustrative stage follows multiplication. The real specification must define its operands, result width, and numerical behavior.',
+    why: 'The microarchitect maps the required sequence of operations into a complete data path.',
+    inputs: 'Defined operands or intermediate values.', outputs: 'A result sent onward under the interface rules.',
+    tradeoff: 'Combining operations or separating them with registers changes timing, storage, latency, and physical cost.', chapter: 4
+  },
+  interface: {
+    name: 'Block interface', type: 'Shared contract',
+    description: 'The producing and receiving blocks agree on data widths, formats, ordering, accepted rates, and flow control.',
+    why: 'A result only contributes to system throughput when the next block accepts and interprets it correctly.',
+    inputs: 'Data, validity information, and receiving conditions.', outputs: 'Accepted transfers and any required response signals.',
+    tradeoff: 'A local optimization can shift buffering, timing, or bandwidth demands onto the neighboring block.', chapter: 4
+  },
+  testbench: {
+    name: 'Testbench', type: 'Design verification',
+    description: 'The verification environment drives scenarios, observes the implementation, and checks required behavior.',
+    why: 'Finding a bug before fabrication avoids carrying that error into manufactured silicon.',
+    inputs: 'Architectural requirements, test scenarios, and the implementation under test.', outputs: 'Observed behavior, checks, coverage, and reproducible failures.',
+    tradeoff: 'Reusable frameworks help organize tests; meaningful scenarios and expectations remain design-specific.', chapter: 5
+  },
+  reference: {
+    name: 'Independent reference', type: 'Architectural intent',
+    description: 'Expected behavior comes from an independent understanding of the specification, including numerical and interface requirements.',
+    why: 'Expectations copied entirely from RTL can repeat an incorrect implementation assumption.',
+    inputs: 'Specified behavior and the test’s input conditions.', outputs: 'The result or behavior the implementation should produce.',
+    tradeoff: 'An unclear specification needs architectural resolution rather than an arbitrary test expectation.', chapter: 5
+  },
+  comparator: {
+    name: 'Result comparison', type: 'Verification evidence',
+    description: 'A check compares expected and observed behavior under the relevant conditions.',
+    why: 'A mismatch gives engineers a concrete disagreement to investigate together.',
+    inputs: 'Expected results and implementation observations.', outputs: 'Agreement or a failure with context for investigation.',
+    tradeoff: 'A failure may reveal an RTL bug, a test issue, or an ambiguous requirement; its cause must be established.', chapter: 5
+  },
+  cells: {
+    name: 'Cells & placement', type: 'Physical design',
+    description: 'Synthesis maps RTL into circuit cells and connections. Physical implementation places those cells on the die.',
+    why: 'Logical behavior needs a realizable physical arrangement of transistor-based circuits.',
+    inputs: 'A synthesized netlist, floorplan, and implementation constraints.', outputs: 'Placed cells and physical analysis.',
+    tradeoff: 'Local density and placement affect routing, timing, area use, and power. The view here is stylized.', chapter: 6
+  },
+  routing: {
+    name: 'Routing', type: 'Physical design',
+    description: 'Physical wiring connects the circuit’s cells and blocks while meeting implementation and manufacturing constraints.',
+    why: 'Connections consume physical resources and contribute to the circuit’s timing and power.',
+    inputs: 'Required connections and placed circuit elements.', outputs: 'Routed connections and analysis of the resulting implementation.',
+    tradeoff: 'Congestion or a long path may require moving a block or changing its organization.', chapter: 6
+  },
+  clock: {
+    name: 'Clock distribution', type: 'Physical design',
+    description: 'Clock distribution reaches the storage elements that coordinate state transitions across cycles.',
+    why: 'The cycle-by-cycle behavior described in RTL needs a physical timing framework.',
+    inputs: 'Clock requirements and the circuit’s storage elements.', outputs: 'An implemented clock distribution network.',
+    tradeoff: 'Clocking, register placement, routing, timing, and power must be evaluated together.', chapter: 6
+  },
+  power: {
+    name: 'Power delivery & budget', type: 'A system constraint',
+    description: 'Power is a design constraint from RTL decisions through physical implementation and rack operation.',
+    why: 'The system must supply energy and remove heat while silicon remains within operating limits.',
+    inputs: 'Circuit activity and requirements for operating voltage and frequency.', outputs: 'Power analysis and a realizable delivery plan.',
+    tradeoff: 'Storage, switching, wiring, clocks, memory activity, and leakage all contribute; logic count alone is insufficient.', chapter: 6
+  },
+  rack: {
+    name: 'Server rack', type: 'Inference system',
+    description: 'The rack brings compute, memory, communication, power delivery, and cooling into an operating system.',
+    why: 'The workload is served by the complete deployment rather than a chip in isolation.',
+    inputs: 'Workloads, software, electrical power, and the required operating environment.', outputs: 'Sustained inference performance under defined conditions.',
+    tradeoff: 'Capacity, interconnect, thermal limits, reliability, and economics all shape useful operation.', chapter: 8
+  },
+  cooling: {
+    name: 'Cooling', type: 'Rack engineering',
+    description: 'Cooling removes heat generated by the system so that hardware can remain within operating limits.',
+    why: 'The performance target needs to be sustainable when many chips operate together.',
+    inputs: 'Heat from active system components.', outputs: 'Heat removal within the deployment’s thermal design.',
+    tradeoff: 'Thermal capacity and operating cost constrain the performance the system can maintain.', chapter: 8
+  },
+  links: {
+    name: 'Chip-to-chip communication', type: 'System interconnect',
+    description: 'Communication moves data when a model or its execution spans multiple devices.',
+    why: 'A token’s generation path can depend on results arriving from another chip.',
+    inputs: 'Distributed-workload traffic and the selected communication configuration.', outputs: 'Data delivered with the path’s effective bandwidth and latency.',
+    tradeoff: 'Topology, protocols, contention, electronics, and traffic matter alongside medium and distance.', chapter: 8
+  },
+  tapeout: {
+    name: 'Tapeout release', type: 'Manufacturing handoff',
+    description: 'After checks and signoff, the completed physical layout and required manufacturing data are released to the foundry.',
+    why: 'Fabrication needs the detailed design that can be manufactured.',
+    inputs: 'Signed-off implementation and manufacturing deliverables.', outputs: 'A release that commonly includes a GDSII or OASIS layout database.',
+    tradeoff: 'A serious error discovered after fabrication may require design changes and another tapeout.', chapter: 7
+  },
+  wafer: {
+    name: 'Fabricated silicon', type: 'Manufacturing',
+    description: 'Fabrication realizes the released circuit design on silicon. This wafer is a conceptual illustration.',
+    why: 'The design must become physical hardware before post-silicon behavior can be evaluated.',
+    inputs: 'The released design and manufacturing process.', outputs: 'Fabricated devices for subsequent product stages.',
+    tradeoff: 'Design evidence precedes manufacturing; testing and validation must also establish real silicon behavior.', chapter: 7
+  },
+  package: {
+    name: 'Accelerator package', type: 'From die to system',
+    description: 'Packaging connects fabricated devices into the intended package. HBM stacks are distinct from the compute die.',
+    why: 'The compute die needs its memory and external connections as part of the larger system.',
+    inputs: 'Fabricated devices and the package design.', outputs: 'Packaged hardware for test, bring-up, and system integration.',
+    tradeoff: 'This conceptual diagram explains roles; it does not reveal an actual Etched package arrangement.', chapter: 7
+  },
+  ai: {
+    name: 'AI-assisted engineering', type: 'Exploration & coordination',
+    description: 'The interview describes a focus on AI assistance for RTL and performance analysis. Connecting cross-team evidence is a further opportunity.',
+    why: 'Candidate implementations and relevant findings can be easier to explore when their context is explicit.',
+    inputs: 'Requirements, RTL, analysis, tests, and engineering context.', outputs: 'Proposals or organized evidence for engineers to evaluate.',
+    tradeoff: 'Changes still require relevant functional, performance, and physical checks; verification must retain independent intent.', chapter: 9
+  },
+  specification: {
+    name: 'Architectural specification', type: 'The shared intent',
+    description: 'The specification defines block responsibilities, interfaces, required behavior, and applicable budgets.',
+    why: 'Designers, verifiers, performance modelers, and physical engineers need a shared statement of the goal.',
+    inputs: 'Workload needs, system goals, and architectural analysis.', outputs: 'Requirements that implementation and independent checks can use.',
+    tradeoff: 'Ambiguities and changing assumptions need explicit feedback rather than separate interpretations.', chapter: 1
+  }
+};
+
+const sources = [
+  { label: 'Etched · Chips, racks, software, and manufacturing', url: 'https://www.etched.com/' },
+  { label: 'NVIDIA · LLM inference benchmarking terminology', url: 'https://developer.nvidia.com/blog/llm-benchmarking-fundamental-concepts/' },
+  { label: 'NVIDIA cuDNN · Block scaling formats', url: 'https://docs.nvidia.com/cudnn/operations/BlockScaling/' },
+  { label: 'NVIDIA TensorRT · Quantization and dequantization', url: 'https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/quantized-types-schemes.html' },
+  { label: 'Accellera · Universal Verification Methodology', url: 'https://www.accellera.org/community/uvm' },
+  { label: 'Synopsys · Low-power design', url: 'https://www.synopsys.com/glossary/what-is-low-power-design.html' },
+  { label: 'Cadence · The RTL-to-GDSII implementation flow', url: 'https://community.cadence.com/cadence_blogs_8/b/di/posts/training-insights---rtl-to-gdsii-creativity-meets-engineering-in-chip-design' },
+  { label: 'TSMC · RTL-through-GDSII design flow', url: 'https://pr.tsmc.com/english/news/1547' }
+];
+
+
+let sceneSequence = 0;
+
+const point = (x, y) => `${x},${y}`;
+const text = (x, y, value, cls = 'scene-label', anchor = 'start') => `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${value}</text>`;
+const line = (d, cls = 'scene-wire', attrs = '') => `<path d="${d}" class="${cls}" ${attrs}/>`;
+const rect = (x, y, w, h, cls, rx = 0) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" class="${cls}"/>`;
+const comp = (id, label, markup, extra = '') => `<g class="scene-component ${extra}" data-component="${id}" tabindex="-1" role="button" aria-label="${label}">${markup}</g>`;
+const tag = (x, y, value) => `<g>${rect(x, y - 19, value.length * 8.1 + 22, 28, 'scene-tag', 3)}${text(x + 11, y, value, 'scene-mono scene-tag-label')}</g>`;
+const dot = (x, y, r = 4, cls = 'scene-node') => `<circle cx="${x}" cy="${y}" r="${r}" class="${cls}"/>`;
+const flow = (d, id = '', cls = '') => `${line(d, `scene-flow ${cls}`, id ? `id="__ID__-${id}"` : '')}${id ? `<circle r="5" class="scene-particle" data-path="__ID__-${id}"/>` : ''}`;
+const arrow = (d, cls = 'scene-arrow') => line(d, cls, 'marker-end="url(#__ID__-arrow)"');
+const hint = (x, y) => `<g class="scene-inspect-mark">${dot(x, y, 10, 'scene-inspect-dot')}${line(`M${x - 4} ${y}h8 M${x} ${y - 4}v8`, 'scene-inspect-plus')}</g>`;
+const smallCells = (x, y, cols, rows, cellW, cellH, gap = 4, cls = 'scene-cell') => Array.from({ length: cols * rows }, (_, i) => rect(x + (i % cols) * (cellW + gap), y + Math.floor(i / cols) * (cellH + gap), cellW, cellH, `${cls} ${i % 9 === 2 ? 'scene-cell-accent' : ''}`, 1)).join('');
+
+function title(number, label, detail) {
+  return `<g class="scene-topline">${text(55, 59, `${String(number).padStart(2, '0')} / ${label.toUpperCase()}`, 'scene-mono scene-eyebrow')}${text(55, 92, detail, 'scene-subtitle')}</g>`;
+}
+function bottom(left, right = 'CONCEPTUAL · NOT AN ETCHED FLOORPLAN') {
+  return `<g class="scene-footline">${line('M55 731H945', 'scene-hairline')}${text(55, 760, left, 'scene-mono scene-caption')}${text(945, 760, right, 'scene-mono scene-caption', 'end')}</g>`;
+}
+function blade(x, y, w = 236, h = 38, index = 0) {
+  return `<g>${rect(x, y, w, h, 'scene-rack-blade', 2)}${rect(x + 8, y + 8, 4, h - 16, index % 3 === 0 ? 'scene-accent-fill' : 'scene-sage-fill', 1)}${smallCells(x + 26, y + 9, 9, 2, 5, 7, 3, 'scene-vent')}${rect(x + w - 62, y + 10, 28, h - 20, 'scene-blade-port', 2)}${dot(x + w - 16, y + h / 2, 3, 'scene-status')}${line(`M${x + 15} ${y + h - 3}H${x + w - 12}`, 'scene-rack-seam')}</g>`;
+}
+function rack(x, y, scale = 1, options = {}) {
+  const depth = options.depth ?? 42;
+  const width = options.width ?? 280;
+  const height = 490;
+  const fill = options.muted ? 'scene-rack-side scene-rack-muted' : 'scene-rack-side';
+  return `<g transform="translate(${x} ${y}) scale(${scale})" class="${options.muted ? 'scene-quiet-rack' : ''}">
+    <path d="M0 0L${depth} -25H${width + depth}L${width} 0Z" class="scene-rack-top"/>
+    <path d="M${width} 0L${width + depth} -25V${height - 25}L${width} ${height}Z" class="${fill}"/>
+    ${rect(0, 0, width, height, 'scene-rack-frame', 3)}${rect(13, 17, width - 26, height - 35, 'scene-rack-face', 2)}
+    ${Array.from({ length: 8 }, (_, i) => blade(22, 58 + i * 44, width - 44, 38, i)).join('')}
+    ${rect(22, 22, width - 44, 26, 'scene-rack-header', 2)}${text(35, 41, 'INFERENCE SYSTEM', 'scene-mono scene-rack-small')}${dot(width - 38, 35, 3, 'scene-status')}
+    ${Array.from({ length: 5 }, (_, i) => { const cx = 49 + i * 44; return `<circle cx="${cx}" cy="441" r="15" class="scene-fan-ring"/><path d="M${cx} 428v26 M${cx - 13} 441h26 M${cx - 9} 432l18 18 M${cx + 9} 432l-18 18" class="scene-fan-spokes"/>`; }).join('')}
+    ${Array.from({ length: 9 }, (_, i) => `${dot(7, 36 + i * 49, 1.8, 'scene-rack-screw')}${dot(width - 7, 36 + i * 49, 1.8, 'scene-rack-screw')}`).join('')}
+    ${rect(19, height, 25, 10, 'scene-rack-foot', 1)}${rect(width - 44, height, 25, 10, 'scene-rack-foot', 1)}
+  </g>`;
+}
+function memoryStack(x, y, label = 'HBM', scale = 1) {
+  return `<g transform="translate(${x} ${y}) scale(${scale})">${Array.from({ length: 5 }, (_, i) => { const yy = 16 - i * 5; return `<path d="M0 ${yy}L15 ${yy - 9}H82L67 ${yy}Z" class="scene-hbm-top"/><path d="M0 ${yy}H67V${yy + 16}H0Z" class="scene-hbm-front"/><path d="M67 ${yy}L82 ${yy - 9}V${yy + 7}L67 ${yy + 16}Z" class="scene-hbm-side"/>`; }).join('')}${text(33, 3, label, 'scene-mono scene-hbm-label', 'middle')}</g>`;
+}
+function die(x, y, width = 260, height = 260) {
+  return `<g>${rect(x - 7, y - 7, width + 14, height + 14, 'scene-die-rim', 2)}${rect(x, y, width, height, 'scene-die', 1)}${smallCells(x + 18, y + 18, 5, 5, (width - 60) / 5, (height - 60) / 5, 6)}${rect(x + 70, y + 70, width - 105, height - 105, 'scene-compute-mini', 2)}${line(`M${x + 16} ${y + height - 34}H${x + width - 16} M${x + 34} ${y + 16}V${y + height - 16}`, 'scene-die-route')}</g>`;
+}
+function rackOpening() {
+  return `${title(1, 'The system', 'A response starts with a system of decisions.')}
+    <ellipse cx="544" cy="698" rx="271" ry="24" class="scene-ground"/>
+    ${rack(158, 273, 0.66, { muted: true })}
+    ${comp('rack', 'Explore the inference server rack', rack(397, 187, 1), '')}
+    ${comp('cooling', 'Explore power and cooling', `<path d="M728 249V642M749 249V642" class="scene-cooling-pipe"/>${line('M728 272H706 M728 360H706 M728 448H706 M728 536H706 M728 624H706', 'scene-cooling-branch')}${text(774, 269, 'COOLING', 'scene-mono scene-muted')}${text(774, 295, '&amp; POWER', 'scene-mono scene-muted')}${hint(740, 658)}`)}
+    ${comp('links', 'Explore the network and chip links', `${flow('M90 379H348Q370 379 370 402V413H419', 'request')}${text(86, 339, 'AI request', 'scene-large-label')}${text(86, 365, 'Application → serving system', 'scene-body-label')}${flow('M419 500H374Q352 500 352 524H90', 'response')}${text(86, 563, 'Generated tokens', 'scene-large-label')}${text(86, 589, 'The experience people see', 'scene-body-label')}`)}
+    ${line('M543 158V127H807', 'scene-callout')}${text(814, 132, 'Many chips. One service.', 'scene-body-label')}
+    ${hint(668, 214)}${bottom('EXPLORE THE RACK, THEN FOLLOW ONE CHIP', 'ILLUSTRATIVE SYSTEM')}`;
+}
+function packageScene() {
+  return `${title(2, 'The package', 'Compute and memory meet at the package.')}
+    <ellipse cx="500" cy="632" rx="368" ry="25" class="scene-ground"/>
+    <path d="M125 273L205 223H870L790 273Z" class="scene-substrate-top"/>
+    <path d="M125 273H790V587H125Z" class="scene-substrate"/>
+    <path d="M790 273L870 223V537L790 587Z" class="scene-substrate-side"/>
+    ${smallCells(143, 558, 31, 1, 13, 9, 7, 'scene-package-pad')}
+    ${line('M183 303H753 M183 330H753 M183 503H753 M183 530H753', 'scene-package-trace')}
+    ${comp('hbm', 'Explore high-bandwidth memory alongside the compute die', `${memoryStack(185, 329, 'HBM', 1.28)}${memoryStack(185, 443, 'HBM', 1.28)}${memoryStack(674, 329, 'HBM', 1.28)}${memoryStack(674, 443, 'HBM', 1.28)}${hint(225, 479)}`)}
+    ${comp('compute', 'Explore the compute die', `${die(365, 292, 266, 238)}${text(498, 418, 'COMPUTE DIE', 'scene-mono scene-die-label', 'middle')}${hint(600, 506)}`)}
+    ${flow('M291 352H349', 'hbm-in')}${flow('M654 465H647', 'hbm-out')}
+    ${line('M234 286V176H86', 'scene-callout')}${text(85, 158, 'High-bandwidth memory', 'scene-large-label')}${text(85, 186, 'Separate stacks alongside the die', 'scene-body-label')}
+    ${line('M516 553V653H726', 'scene-callout')}${text(735, 648, 'Package substrate', 'scene-large-label')}${text(735, 675, 'Connects the components', 'scene-body-label')}
+    ${bottom('HBM HOLDS DATA · THE DIE PERFORMS COMPUTATION')}`;
+}
+function architectureScene() {
+  const compute = `<g>${rect(441, 302, 339, 226, 'scene-compute', 5)}${smallCells(463, 365, 8, 4, 31, 26, 7, 'scene-compute-cell')}${text(462, 337, 'MATH / COMPUTE', 'scene-mono scene-block-label')}${hint(751, 330)}</g>`;
+  const memory = `${rect(89, 245, 116, 338, 'scene-memory-block', 4)}${Array.from({ length: 6 }, (_, i) => rect(105, 286 + i * 43, 83, 29, 'scene-memory-layer', 2)).join('')}${text(147, 275, 'HBM', 'scene-mono scene-block-label', 'middle')}${hint(147, 561)}`;
+  return `${title(3, 'Architecture', 'Organize the chip around the movement of data.')}
+    ${rect(254, 198, 582, 432, 'scene-chip-boundary', 7)}${tag(271, 184, 'COMPUTE DIE')}
+    ${comp('hbm', 'Explore HBM and memory capacity', memory)}
+    ${comp('compute', 'Explore the math and compute units', compute)}
+    ${comp('buffer', 'Explore buffers and on-chip storage', `${rect(278, 302, 120, 226, 'scene-storage', 5)}${text(338, 340, 'ON-CHIP', 'scene-mono scene-block-label', 'middle')}${text(338, 365, 'STORAGE', 'scene-mono scene-block-label', 'middle')}${smallCells(297, 389, 3, 4, 23, 22, 5, 'scene-storage-cell')}${hint(369, 501)}`)}
+    ${comp('control', 'Explore control and scheduling', `${rect(278, 220, 502, 57, 'scene-control', 4)}${text(299, 255, 'CONTROL &amp; SCHEDULING', 'scene-mono scene-block-label')}${hint(751, 249)}`)}
+    ${comp('conversion', 'Explore numeric conversion and data rearrangement', `${rect(278, 553, 502, 55, 'scene-conversion', 4)}${text(299, 587, 'NUMERIC CONVERSION / DATA REARRANGEMENT', 'scene-mono scene-block-label')}${hint(751, 580)}`)}
+    ${comp('interconnect', 'Explore the on-chip interconnect and interfaces', `${line('M814 246V580 M206 415H254 M398 415H441 M529 277V302 M529 528V553 M780 415H899', 'scene-bus')}${dot(814, 415, 7)}${rect(865, 374, 70, 82, 'scene-interface', 3)}${text(900, 408, 'I/O', 'scene-mono scene-block-label', 'middle')}${text(900, 434, 'LINK', 'scene-mono scene-block-label', 'middle')}${hint(900, 476)}`)}
+    ${flow('M206 415H254', 'arch-in')}${flow('M398 415H441', 'arch-compute')}${flow('M780 415H865', 'arch-output')}
+    ${text(89, 670, 'Capacity → bandwidth → dataflow → useful computation', 'scene-large-label')}
+    ${bottom('THE ARCHITECTURE DEFINES RESPONSIBILITIES & INTERFACES')}`;
+}
+function quantizationScene() {
+  const vals = [0.4, -0.2, 0.7, 1.1, -0.9, 0.1, 0.6, -0.3, 0.8, -1.0, 0.3, 0.2, -0.6, 0.5, -0.1, 0.9, -0.4, 0.6, -0.8, 0.3, 1.0, -0.7, 0.2, -0.5, 0.1, 0.9, -0.3, 0.4, -0.2, 0.7, -0.6, 0.5];
+  const grid = (x, low) => vals.map((v, i) => `<g>${rect(x + (i % 8) * 35, 300 + Math.floor(i / 8) * 45, 29, 37, `scene-number-cell ${Math.abs(v) > .65 ? 'scene-number-hot' : ''}`, 3)}${text(x + (i % 8) * 35 + 14.5, 324 + Math.floor(i / 8) * 45, low ? Math.round(v * 5) : v.toFixed(1), 'scene-mono scene-number', 'middle')}</g>`).join('');
+  return `${title(4, 'Numerical formats', 'Fewer bits change the work the hardware must do.')}
+    ${comp('buffer', 'Explore the source block of 32 eight-bit values', `${rect(69, 218, 337, 353, 'scene-format-card', 6)}${text(94, 259, '32 × 8-bit values', 'scene-large-label')}${text(94, 285, 'Illustrative FP8 block', 'scene-body-label')}${grid(94, false)}${text(94, 528, '256 bits of value data', 'scene-mono scene-format-total')}${hint(373, 541)}`)}
+    ${comp('conversion', 'Explore quantization from eight to four bits', `${rect(595, 218, 337, 353, 'scene-format-card scene-format-output', 6)}${text(620, 259, '32 × 4-bit values', 'scene-large-label')}${text(620, 285, 'Illustrative quantized codes', 'scene-body-label')}${grid(620, true)}${text(620, 528, '128 bits of value data', 'scene-mono scene-format-total')}${hint(899, 541)}${arrow('M430 383H565')}${text(500, 345, 'QUANTIZE', 'scene-mono scene-accent-label', 'middle')}${text(500, 431, 'Scale + round', 'scene-body-label', 'middle')}`)}
+    ${line('M238 585V617H765V585', 'scene-bracket')}${text(501, 655, 'Less data to store and move. Numerical quality still needs validation.', 'scene-body-label', 'middle')}${text(501, 684, 'Scale metadata is additional; storage savings depend on the format.', 'scene-caption', 'middle')}
+    ${bottom('A FORMAT DECISION CROSSES MEMORY, COMPUTE & VERIFICATION', 'ILLUSTRATIVE VALUES · NOT A FORMAT SPECIFICATION')}`;
+}
+function microScene() {
+  const block = (id, label, x, symbol, detail, cls = '') => comp(id, `Explore ${label.toLowerCase()}`, `${rect(x, 305, 139, 165, `scene-datapath-block ${cls}`, 5)}${text(x + 69.5, 377, symbol, 'scene-operation-symbol', 'middle')}${text(x + 69.5, 418, label, 'scene-mono scene-block-label', 'middle')}${text(x + 69.5, 445, detail, 'scene-datapath-small', 'middle')}${hint(x + 118, 326)}`);
+  return `${title(5, 'Microarchitecture', 'Turn the requirements into a cycle-by-cycle implementation.')}
+    ${tag(61, 214, 'INSIDE THE MATH BLOCK')}
+    ${comp('interface', 'Explore the 32-bit block input and output interfaces', `${text(67, 350, '32-bit', 'scene-large-label')}${text(67, 380, 'input', 'scene-body-label')}${text(868, 350, '32-bit', 'scene-large-label')}${text(868, 380, 'output', 'scene-body-label')}${dot(99, 411, 6)}${dot(901, 411, 6)}`)}
+    ${block('register', 'REGISTER', 183, 'D', 'Hold a value')}${block('multiply', 'MULTIPLY', 431, '×', 'Compute', 'scene-math-block')}${block('add', 'ADD', 678, '+', 'Accumulate', 'scene-math-block')}
+    ${flow('M106 411H183', 'micro-in')}${flow('M322 387H431', 'micro-mul')}${flow('M570 387H678', 'micro-add')}${flow('M817 411H895', 'micro-out')}
+    ${line('M252 486V532 M500 486V532 M748 486V532 M140 532H861', 'scene-clock-wire')}${text(140, 568, 'CLOCK / PIPELINE BOUNDARIES', 'scene-mono scene-muted')}${line('M145 608h18v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20h26v-20h26v20', 'scene-clock-wave')}
+    ${text(500, 665, 'Interfaces must agree on width, timing, format, and flow control.', 'scene-body-label', 'middle')}
+    ${bottom('RTL DESCRIBES THE LOGIC · PPA CONSTRAINS THE IMPLEMENTATION', 'SIMPLIFIED DATAPATH · ILLUSTRATIVE TIMING')}`;
+}
+function verificationScene() {
+  return `${title(6, 'Design verification', 'Compare the implementation with independent architectural intent.')}
+    ${comp('testbench', 'Explore the verification testbench and stimulus', `${rect(74, 174, 854, 445, 'scene-testbench-boundary', 7)}${text(96, 207, 'TESTBENCH', 'scene-mono scene-muted')}${rect(113, 337, 160, 112, 'scene-test-source', 4)}${text(193, 376, 'STIMULUS', 'scene-mono scene-block-label', 'middle')}${text(193, 406, 'Inputs + edge cases', 'scene-body-label', 'middle')}${hint(250, 357)}`)}
+    ${comp('reference', 'Explore the independent expected behavior derived from the specification', `${rect(375, 235, 253, 116, 'scene-reference', 4)}${text(501, 277, 'REFERENCE MODEL', 'scene-mono scene-block-label', 'middle')}${text(501, 310, 'Architectural specification', 'scene-body-label', 'middle')}${hint(607, 255)}`)}
+    ${comp('compute', 'Explore the RTL implementation under test', `${rect(375, 424, 253, 116, 'scene-compute', 4)}${text(501, 469, 'RTL IMPLEMENTATION', 'scene-mono scene-block-label', 'middle')}${text(501, 503, 'Design under test', 'scene-body-label', 'middle')}${hint(607, 445)}`)}
+    ${comp('comparator', 'Explore comparison of actual and expected results', `<path d="M793 317L873 393L793 469L713 393Z" class="scene-comparator"/>${text(793, 401, '=', 'scene-compare-symbol', 'middle')}${text(793, 505, 'COMPARE', 'scene-mono scene-block-label', 'middle')}${text(793, 534, 'Expected vs. actual', 'scene-body-label', 'middle')}${hint(849, 346)}`)}
+    ${flow('M273 372H315V293H375', 'dv-ref')}${flow('M273 412H315V482H375', 'dv-dut')}${flow('M628 293H688V370H737', 'dv-expected')}${flow('M628 482H688V417H737', 'dv-actual')}
+    <g class="scene-dv-pass" aria-hidden="false">${tag(694, 578, 'MATCH / TEST PASSES')}${dot(903, 567, 5, 'scene-status')}</g>
+    <g class="scene-dv-fault" aria-hidden="true">${tag(682, 578, 'MISMATCH / INVESTIGATE')}${line('M580 555V650H350V570', 'scene-feedback-wire')}${text(470, 681, 'Bug → RTL designer · Unclear intent → architecture', 'scene-body-label', 'middle')}</g>
+    <g class="scene-dv-pass" aria-hidden="false">${text(500, 681, 'Coverage builds confidence across normal behavior and edge cases.', 'scene-body-label', 'middle')}</g>
+    ${bottom('VERIFICATION STARTS FROM THE SPECIFICATION', 'PARALLEL WITH PHYSICAL DESIGN')}`;
+}
+function physicalScene() {
+  const routes = [
+    'M192 262H344V334H548V474H758', 'M192 281H315V355H570V500H758', 'M192 300H291V379H590V524H758',
+    'M204 565H370V441H478V239', 'M226 565H390V462H499V239', 'M249 565H411V484H522V239',
+    'M288 239V319H660V565', 'M310 239V301H683V565', 'M334 239V282H704V565',
+    'M758 347H647V421H561V565', 'M758 368H625V401H538V565', 'M192 432H275V527H460',
+  ];
+  const cells = Array.from({ length: 15 * 12 }, (_, i) => { const col = i % 15; const row = Math.floor(i / 15); const skip = (col > 4 && col < 10 && row > 2 && row < 8); if (skip) return ''; return rect(195 + col * 37, 245 + row * 27, i % 4 === 0 ? 29 : 25, 18, `scene-placed-cell ${i % 11 === 0 ? 'scene-placed-cell-dark' : ''}`, 1); }).join('');
+  return `${title(7, 'Physical design', 'Make the logic fit, connect, and meet its constraints.')}
+    ${rect(154, 204, 651, 406, 'scene-chip-boundary', 5)}
+    ${comp('cells', 'Explore standard cells and placement', `${cells}${rect(371, 322, 185, 211, 'scene-compute-physical', 3)}${smallCells(385, 337, 5, 7, 25, 21, 7, 'scene-physical-math-cell')}${hint(180, 229)}`)}
+    ${comp('routing', 'Explore routing, congestion, and timing', `${routes.map((d, i) => line(d, `scene-layout-route scene-route-${i % 3}`)).join('')}<ellipse cx="594" cy="397" rx="63" ry="78" class="scene-congestion"/>${hint(618, 411)}${line('M628 391H859V305', 'scene-callout')}${text(833, 266, 'CONGESTION', 'scene-mono scene-accent-label')}${text(833, 292, 'Reroute or move cells', 'scene-body-label')}`)}
+    ${comp('clock', 'Explore clock distribution and timing', `${line('M480 224V302 M480 264H295V309 M480 264H668V309 M295 287H228V317 M295 287H367V317 M668 287H601V317 M668 287H734V317', 'scene-clock-tree')}${dot(480, 224, 5, 'scene-clock-root')}${hint(486, 282)}`)}
+    ${comp('power', 'Explore the power distribution network', `${[218, 288, 358, 428, 498, 568].map(y => line(`M170 ${y}H789`, 'scene-power-grid')).join('')}${[176, 270, 364, 458, 552, 646, 740].map(x => line(`M${x} 219V594`, 'scene-power-grid')).join('')}${hint(777, 577)}`)}
+    ${tag(152, 664, 'PLACEMENT')}${tag(325, 664, 'ROUTING')}${tag(477, 664, 'TIMING')}${tag(618, 664, 'POWER')}
+    ${bottom('PHYSICAL RESULTS FEED BACK INTO RTL & ARCHITECTURE', 'ILLUSTRATIVE ROUTES · NO ETCHED MEASUREMENTS')}`;
+}
+function tapeoutScene() {
+  const waferCells = [];
+  for (let row = -4; row <= 4; row += 1) for (let col = -4; col <= 4; col += 1) {
+    if ((row * row + col * col) < 18) waferCells.push(rect(505 + col * 24, 360 + row * 27, 20, 23, `scene-wafer-die ${((row + col) % 6 === 0) ? 'scene-wafer-die-highlight' : ''}`, 1));
+  }
+  return `${title(8, 'Tapeout to silicon', 'The signed-off design becomes something physical.')}
+    ${comp('tapeout', 'Explore tapeout and the released manufacturing layout', `${rect(92, 288, 219, 239, 'scene-layout-sheet', 4)}${rect(109, 305, 185, 169, 'scene-sheet-layout', 2)}${smallCells(123, 320, 5, 5, 25, 23, 6, 'scene-sheet-cell')}${text(110, 504, 'LAYOUT RELEASE', 'scene-mono scene-block-label')}${hint(288, 312)}`)}
+    ${comp('wafer', 'Explore fabrication and silicon wafers', `<circle cx="515" cy="383" r="150" class="scene-wafer" fill="url(#__ID__-wafer)"/><circle cx="515" cy="383" r="139" class="scene-wafer-inner"/>${waferCells.join('')}<path d="M502 530l13 -10l13 10" class="scene-wafer-notch"/>${hint(619, 285)}`)}
+    ${comp('package', 'Explore packaging, testing, and bring-up', `<path d="M744 343l34 -22h133l-34 22Z" class="scene-substrate-top"/>${rect(744, 343, 133, 132, 'scene-substrate', 2)}<path d="M877 343l34 -22v133l-34 21Z" class="scene-substrate-side"/>${die(775, 363, 72, 72)}${memoryStack(748, 369, '', .28)}${memoryStack(854, 369, '', .28)}${hint(885, 455)}`)}
+    ${arrow('M319 393H350')}${arrow('M675 393H721')}
+    ${text(202, 579, 'Tapeout', 'scene-large-label', 'middle')}${text(202, 610, 'Signed-off layout + data', 'scene-body-label', 'middle')}${text(515, 579, 'Fabrication', 'scene-large-label', 'middle')}${text(515, 610, 'Manufactured silicon', 'scene-body-label', 'middle')}${text(826, 579, 'Packaging + test', 'scene-large-label', 'middle')}${text(826, 610, 'Then silicon bring-up', 'scene-body-label', 'middle')}
+    ${bottom('TAPEOUT CLOSES DESIGN · SILICON STILL NEEDS VALIDATION', 'ILLUSTRATIVE MANUFACTURING SEQUENCE')}`;
+}
+function racksFinal() {
+  return `${title(9, 'Back to the rack', 'The complete system must deliver the intended experience.')}
+    <ellipse cx="499" cy="673" rx="386" ry="29" class="scene-ground"/>
+    ${comp('rack', 'Explore the deployed multi-rack inference system', `${rack(84, 300, .68, { muted: true })}${rack(391, 237, .84)}${rack(716, 300, .68, { muted: true })}`)}
+    ${comp('links', 'Explore multi-chip communication and latency', `${flow('M267 374H350Q368 374 368 359V346H409', 'rack-link-a')}${flow('M617 346H658Q674 346 674 364V374H732', 'rack-link-b')}${flow('M267 466H340Q358 466 358 478V499H409', 'rack-link-c')}${flow('M617 499H666Q684 499 684 483V466H732', 'rack-link-d')}${text(500, 180, 'COMPUTE + MEMORY + INTERCONNECT', 'scene-mono scene-accent-label', 'middle')}${hint(680, 413)}`)}
+    ${comp('cooling', 'Explore sustained power and cooling requirements', `${line('M73 646H925', 'scene-cooling-manifold')}${line('M131 646V619 M438 646V630 M763 646V619', 'scene-cooling-branch')}${text(501, 705, 'Power and cooling set the operating envelope.', 'scene-body-label', 'middle')}${hint(922, 646)}`)}
+    ${bottom('LATENCY · THROUGHPUT · RELIABILITY · EFFICIENCY', 'ILLUSTRATIVE SYSTEM')}`;
+}
+function aiScene() {
+  const nodes = [
+    { x: 94, y: 206, w: 226, h: 118, label: 'SPECIFICATION', sub: 'Intent + interfaces', id: 'specification', cls: 'scene-control' },
+    { x: 680, y: 206, w: 226, h: 118, label: 'RTL', sub: 'Logic + implementation', id: 'compute', cls: 'scene-compute' },
+    { x: 94, y: 488, w: 226, h: 118, label: 'VERIFICATION', sub: 'Tests + coverage', id: 'testbench', cls: 'scene-reference' },
+    { x: 680, y: 488, w: 226, h: 118, label: 'PHYSICAL DESIGN', sub: 'Area + timing + power', id: 'cells', cls: 'scene-control' },
+  ];
+  return `${title(10, 'AI across the process', 'Connect a proposed change to the evidence it needs.')}
+    ${nodes.map(n => comp(n.id, `Explore ${n.label.toLowerCase()} and cross-team coordination`, `${rect(n.x, n.y, n.w, n.h, n.cls, 5)}${text(n.x + 20, n.y + 42, n.label, 'scene-mono scene-block-label')}${text(n.x + 20, n.y + 75, n.sub, 'scene-body-label')}${hint(n.x + n.w - 22, n.y + n.h - 22)}`)).join('')}
+    ${comp('ai', 'Explore AI assistance and proposed coordination tools', `<circle cx="500" cy="406" r="100" class="scene-ai-ring"/><circle cx="500" cy="406" r="86" class="scene-ai-core"/>${text(500, 391, 'AI ASSISTANCE', 'scene-mono scene-block-label', 'middle')}${text(500, 423, 'Trace a format change', 'scene-body-label', 'middle')}${text(500, 449, 'Keep evidence connected', 'scene-body-label', 'middle')}${hint(568, 346)}`)}
+    ${flow('M320 265H373V347H420', 'ai-spec')}${flow('M580 347H627V265H680', 'ai-rtl')}${flow('M320 548H373V465H420', 'ai-dv')}${flow('M580 465H627V548H680', 'ai-pd')}
+    ${text(500, 677, 'Implementation support today. Better coordination is an opportunity.', 'scene-body-label', 'middle')}
+    ${bottom('PROPOSALS STILL NEED ENGINEERING REVIEW & VALIDATION', 'CURRENT FOCUS & PROPOSED USES DISTINGUISHED IN THE STORY')}`;
+}
+
+const chapterBuilders = [rackOpening, packageScene, architectureScene, quantizationScene, microScene, verificationScene, physicalScene, tapeoutScene, racksFinal, aiScene];
+
+/** A dependency-free, accessible SVG stage for the chip design story. */
+function createScene(host, callbacks = {}) {
+  const prefix = `etched-scene-${++sceneSequence}`;
+  const svgMarkup = `<svg class="etched-scene" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Interactive diagrams of Etched’s chip design process">
+    <title>From an AI request to silicon and back</title><desc>Ten conceptual engineering diagrams. Select a labeled component to read its role and tradeoffs.</desc>
+    <defs>
+      <pattern id="__ID__-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".85" fill="#aeb5a8" opacity=".33"/></pattern>
+      <marker id="__ID__-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#e95932" stroke-width="1.5"/></marker>
+      <linearGradient id="__ID__-wafer" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e4e9e0"/><stop offset=".45" stop-color="#b4c0ae"/><stop offset="1" stop-color="#eff0e9"/></linearGradient>
+    </defs>
+    <rect width="1000" height="800" fill="#f4f3ed"/><rect x="37" y="117" width="926" height="600" fill="url(#__ID__-grid)"/>
+    <path d="M37 128v-11h11 M952 117h11v11 M37 706v11h11 M952 717h11v-11" class="scene-corner"/>
+    ${chapterBuilders.map((builder, i) => `<g class="scene-layer ${i === 0 ? 'is-active' : ''}" data-scene="${i}" aria-hidden="${i !== 0}"><g class="scene-camera">${builder()}</g></g>`).join('')}
+  </svg>`;
+  host.innerHTML = svgMarkup.replaceAll('__ID__', prefix);
+  host.classList.add('scene-host', 'scene-is-playing');
+  const svg = host.querySelector('svg');
+  const layers = [...host.querySelectorAll('[data-scene]')];
+  let activeIndex = 0;
+  let selected = '';
+  let playing = true;
+  let frame = 0;
+  let lastTime = 0;
+  let travel = 0;
+  let destroyed = false;
+  let hovered = null;
+  let transitionTimer = 0;
+  let cameraResetTimer = 0;
+  let focusedCamera = null;
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const particles = [...host.querySelectorAll('[data-path]')].map(node => {
+    const path = host.querySelector(`#${node.dataset.path}`);
+    return { node, path, length: path.getTotalLength(), chapter: Number(node.closest('[data-scene]').dataset.scene) };
+  });
+  const setTabStops = () => layers.forEach((layer, i) => layer.querySelectorAll('[data-component]').forEach(node => node.setAttribute('tabindex', i === activeIndex ? '0' : '-1')));
+  setTabStops();
+  function updateComponentFocus() {
+    clearTimeout(cameraResetTimer);
+    if (focusedCamera) {
+      const restoringCamera = focusedCamera;
+      restoringCamera.style.transition = motionPreference.matches ? 'none' : 'transform 500ms cubic-bezier(.22,.65,.25,1)';
+      restoringCamera.style.removeProperty('transform');
+      restoringCamera.style.removeProperty('transform-origin');
+      cameraResetTimer = setTimeout(() => restoringCamera.style.removeProperty('transition'), motionPreference.matches ? 0 : 520);
+      focusedCamera = null;
+    }
+    if (!selected) return;
+    const component = [...layers[activeIndex].querySelectorAll('[data-component]')].find(node => node.dataset.component === selected);
+    if (!component) return;
+    const bounds = component.getBBox();
+    if (!bounds.width || !bounds.height) return;
+    const mobile = window.matchMedia('(max-width: 760px)').matches;
+    const scale = Math.max(1, Math.min(mobile ? 1.9 : 1.65, 840 / bounds.width, 640 / bounds.height));
+    // Wide system-level components already fill the diagram; keep their context visible.
+    if (scale < 1.08) return;
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+    const camera = layers[activeIndex].querySelector('.scene-camera');
+    clearTimeout(cameraResetTimer);
+    camera.style.transition = motionPreference.matches ? 'none' : 'transform 600ms cubic-bezier(.22,.65,.25,1)';
+    camera.style.transformOrigin = '500px 400px';
+    camera.style.transform = `translate(${scale * (500 - centerX)}px, ${scale * (400 - centerY)}px) scale(${scale})`;
+    focusedCamera = camera;
+  }
+  function animate(time) {
+    frame = 0;
+    if (destroyed || !playing || motionPreference.matches || document.hidden) return;
+    travel += Math.min(time - (lastTime || time), 40) * .00018;
+    lastTime = time;
+    particles.forEach(({ node, path, length, chapter }, i) => {
+      if (chapter !== activeIndex) return;
+      const p = path.getPointAtLength(((travel + i * .17) % 1) * length);
+      node.setAttribute('cx', p.x); node.setAttribute('cy', p.y);
+    });
+    frame = requestAnimationFrame(animate);
+  }
+  function updateMotion() {
+    host.classList.toggle('scene-is-playing', playing && !motionPreference.matches);
+    host.classList.toggle('scene-reduced-motion', motionPreference.matches);
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0; lastTime = 0;
+    if (playing && !motionPreference.matches && !document.hidden) frame = requestAnimationFrame(animate);
+  }
+  function componentFromEvent(event) {
+    const node = event.target.closest?.('[data-component]');
+    return node && Number(node.closest('[data-scene]').dataset.scene) === activeIndex ? node : null;
+  }
+  function onClick(event) { const node = componentFromEvent(event); if (node) callbacks.onSelect?.(node.dataset.component); }
+  function onKeydown(event) { if (event.key !== 'Enter' && event.key !== ' ') return; const node = componentFromEvent(event); if (node) { event.preventDefault(); callbacks.onSelect?.(node.dataset.component); } }
+  function onHover(event) {
+    const node = componentFromEvent(event);
+    if (node === hovered) return;
+    hovered?.classList.remove('is-hovered');
+    hovered = node;
+    if (node) { node.classList.add('is-hovered'); callbacks.onHover?.(node.dataset.component, event); }
+    else callbacks.onLeave?.();
+  }
+  function onLeave() { hovered?.classList.remove('is-hovered'); hovered = null; callbacks.onLeave?.(); }
+  svg.addEventListener('click', onClick);
+  svg.addEventListener('keydown', onKeydown);
+  svg.addEventListener('pointerover', onHover);
+  svg.addEventListener('pointerleave', onLeave);
+  svg.addEventListener('focusin', onHover);
+  svg.addEventListener('focusout', onLeave);
+  motionPreference.addEventListener('change', updateMotion);
+  document.addEventListener('visibilitychange', updateMotion);
+  updateMotion();
+  return {
+    setChapter(index, progress = 0) {
+      const next = Math.max(0, Math.min(chapterBuilders.length - 1, Math.round(Number(index) || 0)));
+      if (next !== activeIndex) {
+        const leavingLayer = layers[activeIndex];
+        const zoomingIn = next > activeIndex && next < 7;
+        layers.forEach(layer => layer.classList.remove('is-leaving', 'is-arriving'));
+        host.classList.toggle('scene-zooming-out', !zoomingIn);
+        leavingLayer.classList.add('is-leaving');
+        activeIndex = next;
+        layers.forEach((layer, i) => { layer.classList.toggle('is-active', i === activeIndex); layer.setAttribute('aria-hidden', i !== activeIndex ? 'true' : 'false'); });
+        layers[activeIndex].classList.add('is-arriving');
+        clearTimeout(transitionTimer);
+        transitionTimer = setTimeout(() => layers.forEach(layer => layer.classList.remove('is-leaving', 'is-arriving')), 700);
+        setTabStops(); onLeave();
+        if (selected) updateComponentFocus();
+      }
+      const p = Math.max(0, Math.min(1, Number(progress) || 0));
+      layers[activeIndex].querySelector('.scene-camera').style.setProperty('--scene-pan', `${p * -4}px`);
+      layers[activeIndex].querySelector('.scene-camera').style.setProperty('--scene-zoom', 1 + p * .009);
+    },
+    selectComponent(id) {
+      selected = id || '';
+      host.querySelectorAll('[data-component]').forEach(node => {
+        const isSelected = node.dataset.component === selected;
+        node.classList.toggle('is-selected', isSelected);
+        node.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+      updateComponentFocus();
+    },
+    setPlaying(value) { playing = Boolean(value); updateMotion(); },
+    setVerificationFault(value) {
+      const fault = Boolean(value);
+      host.classList.toggle('scene-has-fault', fault);
+      host.querySelector('.scene-compare-symbol').textContent = fault ? '≠' : '=';
+      host.querySelectorAll('.scene-dv-fault').forEach(node => node.setAttribute('aria-hidden', String(!fault)));
+      host.querySelectorAll('.scene-dv-pass').forEach(node => node.setAttribute('aria-hidden', String(fault)));
+    },
+    destroy() {
+      destroyed = true;
+      clearTimeout(transitionTimer);
+      clearTimeout(cameraResetTimer);
+      cancelAnimationFrame(frame);
+      motionPreference.removeEventListener('change', updateMotion);
+      document.removeEventListener('visibilitychange', updateMotion);
+      svg.removeEventListener('click', onClick); svg.removeEventListener('keydown', onKeydown);
+      svg.removeEventListener('pointerover', onHover); svg.removeEventListener('pointerleave', onLeave);
+      svg.removeEventListener('focusin', onHover); svg.removeEventListener('focusout', onLeave);
+      host.innerHTML = '';
+    },
+  };
+}
+
+
+
+
+const $ = (id) => document.getElementById(id);
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const smallScreen = matchMedia('(max-width: 760px)');
+const state = { chapter:-1, selected:null, paused:reducedMotion.matches, fault:false, lastTrigger:null };
+const escapeHTML = (s) => String(s).replace(/[&<>"']/g,(c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const navLabels = ['System','Package','Architecture','Quantization','Microarchitecture','Verification','Physical design','Tapeout','Server racks','AI & feedback'];
+
+$('scroll-track').innerHTML = chapters.map((chapter,i) => `<section class="scroll-step" id="${escapeHTML(chapter.id)}" aria-label="View ${i+1}: ${escapeHTML(chapter.title)}"><h2 class="sr-only">${escapeHTML(chapter.title)}</h2></section>`).join('');
+$('chapter-nav').innerHTML = chapters.map((chapter,i) => `<button type="button" data-chapter-link="${i}" aria-label="View ${i+1}: ${escapeHTML(chapter.title)}"><span class="nav-number">${String(i+1).padStart(2,'0')}</span><span class="nav-label">${navLabels[i]}</span></button>`).join('');
+$('source-links').innerHTML = sources.map((source) => `<li><a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.label)}</a></li>`).join('');
+
+const scene = createScene($('scene'),{onSelect:selectComponent,onHover:showTooltip,onLeave:hideTooltip});
+// The explorer supplies its own chapter labels; frame the actual diagram more closely.
+$('scene').querySelector('svg').setAttribute('viewBox','0 110 1000 610');
+scene.setPlaying(!state.paused);
+
+function hideTooltip() { $('component-tooltip').hidden = true; }
+function showTooltip(id,event) {
+  if (smallScreen.matches || state.selected || !components[id]) return;
+  const item=components[id];
+  $('tooltip-title').textContent=item.name;
+  $('tooltip-description').textContent=item.description;
+  const tooltip=$('component-tooltip'); tooltip.hidden=false;
+  const target=event?.target?.closest?.('[data-component]') || event?.target;
+  const rect=target?.getBoundingClientRect?.();
+  const x=event?.clientX || rect?.right || innerWidth/2;
+  const y=event?.clientY || rect?.top || innerHeight/2;
+  const box=tooltip.getBoundingClientRect();
+  let left=x+19,top=y-box.height-14;
+  if (left+box.width>innerWidth-12) left=x-box.width-19;
+  if (top<85) top=y+22;
+  tooltip.style.left=`${Math.max(12,Math.min(left,innerWidth-box.width-12))}px`;
+  tooltip.style.top=`${Math.max(84,Math.min(top,innerHeight-box.height-12))}px`;
+}
+
+function selectComponent(id) {
+  const item=components[id]; if (!item) return;
+  state.lastTrigger=document.activeElement;
+  state.selected=id; hideTooltip();
+  $('inspector-type').textContent=item.type;
+  $('inspector-title').textContent=item.name;
+  $('inspector-description').textContent=item.description;
+  $('inspector-facts').replaceChildren();
+  for (const [label,key] of [['Purpose','why'],['Inputs','inputs'],['Outputs','outputs'],['Tradeoff','tradeoff']]) {
+    if (!item[key]) continue;
+    const dt=document.createElement('dt'); dt.textContent=label;
+    const dd=document.createElement('dd'); dd.textContent=item[key];
+    $('inspector-facts').append(dt,dd);
+  }
+  $('inspector').hidden=false;
+  $('visual-explorer').classList.add('has-inspector');
+  scene.selectComponent(id);
+  $('inspector').focus({preventScroll:true});
+  document.querySelectorAll('[data-component-link]').forEach((button) => button.setAttribute('aria-pressed',String(button.dataset.componentLink===id)));
+  $('view-announcement').textContent=`Selected ${item.name}. Component details are open.`;
+}
+
+function closeInspector(restore=false) {
+  $('inspector').hidden=true;
+  $('visual-explorer').classList.remove('has-inspector');
+  state.selected=null; scene.selectComponent(null);
+  document.querySelectorAll('[data-component-link]').forEach((button) => button.setAttribute('aria-pressed','false'));
+  if (restore && state.lastTrigger?.isConnected) state.lastTrigger.focus({preventScroll:true});
+}
+
+function activateChapter(index,progress=0) {
+  if (state.chapter!==index) {
+    state.chapter=index; closeInspector(); hideTooltip();
+    const chapter=chapters[index];
+    $('view-kicker').textContent=chapter.kicker;
+    $('view-title').textContent=chapter.title;
+    $('view-caption').textContent=chapter.caption;
+    $('view-number').textContent=String(index+1).padStart(2,'0');
+    $('fault-toggle').hidden=index!==5;
+    $('previous-view').disabled=index===0;
+    $('next-view').disabled=index===chapters.length-1;
+    const buttons=[...document.querySelectorAll('[data-chapter-link]')];
+    buttons.forEach((button,i) => i===index ? button.setAttribute('aria-current','step') : button.removeAttribute('aria-current'));
+    const active=buttons[index],nav=$('chapter-nav');
+    nav.scrollTo({left:Math.max(0,active.offsetLeft-nav.offsetLeft-nav.clientWidth/2+active.offsetWidth/2),behavior:reducedMotion.matches?'instant':'smooth'});
+    $('component-strip').innerHTML=chapter.componentIds.map((id) => `<button type="button" class="component-chip" data-component-link="${id}" aria-pressed="false">${escapeHTML(components[id]?.name || id)}</button>`).join('');
+    $('component-strip').scrollLeft=0;
+    $('view-announcement').textContent=`View ${index+1}: ${chapter.title}. ${chapter.caption}`;
+  }
+  scene.setChapter(index,progress);
+}
+
+let scrollFrame=0;
+function updateOnScroll() {
+  scrollFrame=0;
+  const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);
+  const position=Math.max(0,Math.min(chapters.length-1,scrollY/max*(chapters.length-1)));
+  const active=Math.round(position);
+  activateChapter(active,Math.max(0,Math.min(1,position-active+.5)));
+  $('journey-progress').style.transform=`scaleX(${position/(chapters.length-1)})`;
+}
+function scheduleScroll() { if (!scrollFrame) scrollFrame=requestAnimationFrame(updateOnScroll); }
+function goToChapter(index,instant=false) {
+  const target=Math.max(0,Math.min(chapters.length-1,index));
+  const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);
+  window.scrollTo({top:target/(chapters.length-1)*max,behavior:instant || reducedMotion.matches?'instant':'smooth'});
+  history.replaceState(null,'',`#${chapters[target].id}`);
+}
+window.addEventListener('scroll',scheduleScroll,{passive:true});
+window.addEventListener('resize',scheduleScroll,{passive:true});
+document.addEventListener('click',(event) => {
+  const chapterButton=event.target.closest('[data-chapter-link]');
+  if (chapterButton) goToChapter(Number(chapterButton.dataset.chapterLink));
+  const componentButton=event.target.closest('[data-component-link]');
+  if (componentButton) selectComponent(componentButton.dataset.componentLink);
+});
+$('previous-view').addEventListener('click',() => goToChapter(state.chapter-1));
+$('next-view').addEventListener('click',() => goToChapter(state.chapter+1));
+$('chapter-nav').addEventListener('keydown',(event) => {
+  const button=event.target.closest('[data-chapter-link]'); if (!button) return;
+  let next=Number(button.dataset.chapterLink);
+  if (event.key==='ArrowRight') next++;
+  else if (event.key==='ArrowLeft') next--;
+  else if (event.key==='Home') next=0;
+  else if (event.key==='End') next=chapters.length-1;
+  else return;
+  event.preventDefault();
+  next=Math.max(0,Math.min(chapters.length-1,next));
+  goToChapter(next);
+  document.querySelector(`[data-chapter-link="${next}"]`).focus({preventScroll:true});
+});
+$('inspector-close').addEventListener('click',() => closeInspector(true));
+document.addEventListener('keydown',(event) => { if (event.key==='Escape') { hideTooltip(); closeInspector(true); } });
+
+function updateMotionButton() {
+  $('motion-toggle').disabled=reducedMotion.matches;
+  $('motion-label').textContent=reducedMotion.matches?'Motion off':state.paused?'Play':'Pause';
+  $('motion-icon').textContent=reducedMotion.matches?'—':state.paused?'▷':'Ⅱ';
+  $('motion-toggle').setAttribute('aria-label',reducedMotion.matches?'Animation is off to respect your reduced motion preference':state.paused?'Play diagram animation':'Pause diagram animation');
+  $('motion-toggle').setAttribute('aria-pressed',String(state.paused));
+}
+$('motion-toggle').addEventListener('click',() => { state.paused=!state.paused; scene.setPlaying(!state.paused); updateMotionButton(); });
+reducedMotion.addEventListener('change',() => { state.paused=reducedMotion.matches; scene.setPlaying(!state.paused); updateMotionButton(); });
+function updateHint() { $('explore-hint').textContent=smallScreen.matches?'Tap a component to inspect':'Hover to inspect · click to focus'; }
+smallScreen.addEventListener('change',updateHint);
+$('fault-toggle').addEventListener('click',() => {
+  state.fault=!state.fault; scene.setVerificationFault(state.fault);
+  $('fault-toggle').setAttribute('aria-pressed',String(state.fault));
+  $('fault-toggle').textContent=state.fault?'Restore expected behavior':'Introduce a mismatch';
+  $('view-announcement').textContent=state.fault?'Illustrative mismatch detected.':'The illustrative implementation matches expected behavior.';
+});
+$('sources-open').addEventListener('click',() => { hideTooltip(); $('sources-dialog').showModal(); });
+$('sources-close').addEventListener('click',() => $('sources-dialog').close());
+$('sources-dialog').addEventListener('click',(event) => { if (event.target===$('sources-dialog')) { const r=$('sources-dialog').getBoundingClientRect(); if (event.clientX<r.left || event.clientX>r.right || event.clientY<r.top || event.clientY>r.bottom) $('sources-dialog').close(); } });
+document.addEventListener('visibilitychange',() => scene.setPlaying(!state.paused && !document.hidden));
+updateMotionButton(); updateHint(); updateOnScroll();
+if (location.hash) {
+  const index=chapters.findIndex((chapter) => `#${chapter.id}`===location.hash);
+  if (index>=0) requestAnimationFrame(() => { goToChapter(index,true); updateOnScroll(); });
+}
+
+</script>
+  </head>
+  <body>
+    <a class="skip-link" href="#chapter-nav">Skip to chapter navigation</a>
+    <header class="site-header">
+      <a class="wordmark" href="#experience" aria-label="Etched, return to the first view">etched<span>.</span></a>
+      <div class="site-title"><h1>Inside the chip</h1><span>AN INTERACTIVE DESIGN EXPLORER</span></div>
+      <div class="header-actions"><span class="scroll-cue">Scroll to explore <span aria-hidden="true">↓</span></span><button class="text-button" id="sources-open" type="button">Sources <span aria-hidden="true">↗</span></button></div>
+    </header>
+    <div class="journey-progress" aria-hidden="true"><span id="journey-progress"></span></div>
+
+    <main id="visual-explorer" class="visual-explorer" aria-label="Interactive chip design explorer">
+      <div class="view-heading"><div><div class="eyebrow" id="view-kicker">01 / THE SYSTEM</div><h2 id="view-title">System</h2><p id="view-caption"></p></div><span class="view-count"><span id="view-number">01</span><span>/ 10</span></span></div>
+      <div class="visual-canvas-wrap">
+        <div id="scene" class="scene-canvas" aria-label="Interactive diagram. Select a component to inspect it."></div>
+        <section id="inspector" class="inspector" aria-labelledby="inspector-title" tabindex="-1" hidden>
+          <div class="inspector-heading"><span class="eyebrow" id="inspector-type"></span><button class="icon-button" id="inspector-close" type="button" aria-label="Close component details">×</button></div>
+          <h3 id="inspector-title"></h3><p id="inspector-description"></p><dl id="inspector-facts"></dl>
+        </section>
+      </div>
+      <div class="visual-toolbar"><span id="explore-hint">Hover to inspect · click to focus</span><div class="toolbar-actions"><button id="fault-toggle" class="fault-button" type="button" aria-pressed="false" hidden>Introduce a mismatch</button><button id="motion-toggle" class="motion-button" type="button" aria-label="Pause diagram animation" aria-pressed="false"><span id="motion-icon" aria-hidden="true">Ⅱ</span><span id="motion-label">Pause</span></button><span class="concept-label">CONCEPTUAL DIAGRAM</span></div></div>
+      <div class="component-strip" id="component-strip" aria-label="Components in this view"></div>
+    </main>
+
+    <div id="scroll-track" class="scroll-track" aria-label="Scroll through the ten chip design views"><noscript><p class="no-script">Enable JavaScript to explore the interactive diagrams.</p></noscript></div>
+
+    <footer class="journey-footer"><button type="button" class="view-arrow" id="previous-view" aria-label="Previous view">←</button><nav class="chapter-nav" aria-label="Chip design views" id="chapter-nav" tabindex="-1"></nav><button type="button" class="view-arrow" id="next-view" aria-label="Next view">→</button></footer>
+
+    <dialog id="sources-dialog" class="sources-dialog" aria-labelledby="sources-title"><div class="dialog-heading"><div><span class="eyebrow">REFERENCES</span><h2 id="sources-title">Behind the diagrams</h2></div><button id="sources-close" class="icon-button" type="button" aria-label="Close sources">×</button></div><p>Conceptual illustrations of chip design. Layouts, routes, and animation timings are illustrative.</p><ol id="source-links" class="source-links"></ol></dialog>
+    <div id="component-tooltip" class="component-tooltip" role="tooltip" hidden><strong id="tooltip-title"></strong><span id="tooltip-description"></span><small>Click to focus</small></div>
+    <div id="view-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>

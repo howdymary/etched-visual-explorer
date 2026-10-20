@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f5ef" />
+    <meta name="description" content="Explore the design of an inference chip through interactive diagrams, from the server rack to architecture, RTL, verification, physical design, and silicon." />
+    <title>Inside the chip — Etched visual explorer</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23e95932'/%3E%3Cpath d='M10 13h20M10 20h14M10 27h20' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./src/scene.css" />
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#chapter-nav">Skip to chapter navigation</a>
+    <header class="site-header">
+      <a class="wordmark" href="#experience" aria-label="Etched, return to the first view">etched<span>.</span></a>
+      <div class="site-title"><h1>Inside the chip</h1><span>AN INTERACTIVE DESIGN EXPLORER</span></div>
+      <div class="header-actions"><span class="scroll-cue">Scroll to explore <span aria-hidden="true">↓</span></span><button class="text-button" id="sources-open" type="button">Sources <span aria-hidden="true">↗</span></button></div>
+    </header>
+    <div class="journey-progress" aria-hidden="true"><span id="journey-progress"></span></div>
+
+    <main id="visual-explorer" class="visual-explorer" aria-label="Interactive chip design explorer">
+      <div class="view-heading"><div><div class="eyebrow" id="view-kicker">01 / THE SYSTEM</div><h2 id="view-title">System</h2><p id="view-caption"></p></div><span class="view-count"><span id="view-number">01</span><span>/ 10</span></span></div>
+      <div class="visual-canvas-wrap">
+        <div id="scene" class="scene-canvas" aria-label="Interactive diagram. Select a component to inspect it."></div>
+        <section id="inspector" class="inspector" aria-labelledby="inspector-title" tabindex="-1" hidden>
+          <div class="inspector-heading"><span class="eyebrow" id="inspector-type"></span><button class="icon-button" id="inspector-close" type="button" aria-label="Close component details">×</button></div>
+          <h3 id="inspector-title"></h3><p id="inspector-description"></p><dl id="inspector-facts"></dl>
+        </section>
+      </div>
+      <div class="visual-toolbar"><span id="explore-hint">Hover to inspect · click to focus</span><div class="toolbar-actions"><button id="fault-toggle" class="fault-button" type="button" aria-pressed="false" hidden>Introduce a mismatch</button><button id="motion-toggle" class="motion-button" type="button" aria-label="Pause diagram animation" aria-pressed="false"><span id="motion-icon" aria-hidden="true">Ⅱ</span><span id="motion-label">Pause</span></button><span class="concept-label">CONCEPTUAL DIAGRAM</span></div></div>
+      <div class="component-strip" id="component-strip" aria-label="Components in this view"></div>
+    </main>
+
+    <div id="scroll-track" class="scroll-track" aria-label="Scroll through the ten chip design views"><noscript><p class="no-script">Enable JavaScript to explore the interactive diagrams.</p></noscript></div>
+
+    <footer class="journey-footer"><button type="button" class="view-arrow" id="previous-view" aria-label="Previous view">←</button><nav class="chapter-nav" aria-label="Chip design views" id="chapter-nav" tabindex="-1"></nav><button type="button" class="view-arrow" id="next-view" aria-label="Next view">→</button></footer>
+
+    <dialog id="sources-dialog" class="sources-dialog" aria-labelledby="sources-title"><div class="dialog-heading"><div><span class="eyebrow">REFERENCES</span><h2 id="sources-title">Behind the diagrams</h2></div><button id="sources-close" class="icon-button" type="button" aria-label="Close sources">×</button></div><p>Conceptual illustrations of chip design. Layouts, routes, and animation timings are illustrative.</p><ol id="source-links" class="source-links"></ol></dialog>
+    <div id="component-tooltip" class="component-tooltip" role="tooltip" hidden><strong id="tooltip-title"></strong><span id="tooltip-description"></span><small>Click to focus</small></div>
+    <div id="view-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
