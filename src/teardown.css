@@ -1,0 +1,17 @@
+@layer diagram {
+  .teardown-stage { pointer-events:none; font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; }
+  .teardown-paper { fill:#fff; }
+  .teardown-stage .teardown-breadcrumb text { fill:#8a8a8a; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.07em; }
+  .teardown-stage .teardown-breadcrumb text[data-active="true"] { fill:#252525; }
+  .teardown-stage .teardown-breadcrumb .teardown-separator { fill:#aaa; }
+  .teardown-bay { fill:#ff642e; fill-opacity:.09; stroke:#ff642e; stroke-width:2; vector-effect:non-scaling-stroke; }
+  .teardown-rails { fill:none; stroke:#b2b2b2; stroke-width:1.3; stroke-dasharray:4 6; }
+  .teardown-carrier rect { fill:#fafafa; fill-opacity:.5; stroke:#aaa; stroke-width:3; }
+  .teardown-carrier path { fill:none; stroke:#b9b9b9; stroke-width:2; stroke-dasharray:9 10; }
+  .teardown-annotation path { fill:none; stroke:#b5b5b5; stroke-width:1; }
+  .teardown-stage .teardown-annotation text { fill:#333; font-size:15px; font-weight:400; letter-spacing:-.01em; }
+  .teardown-stage .teardown-annotation text.teardown-annotation-secondary { fill:#777; font-size:11px; letter-spacing:0; }
+  .teardown-stage .teardown-caption { fill:#777; font:9px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.02em; }
+  [data-teardown-stage] image { image-rendering:auto; }
+  @media (prefers-reduced-motion:reduce) { .teardown-stage, .teardown-stage * { transition:none !important; animation:none !important; } }
+}

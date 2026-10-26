@@ -1,36 +1,36 @@
 export const chapters = [
   {
     "id": "experience",
-    "kicker": "01 / System",
-    "title": "System",
-    "caption": "From packaged silicon to a complete rack: the system is the unit of performance.",
+    "kicker": "01 / From rack to tray",
+    "title": "Inside the rack",
+    "caption": "Select a tray, follow it out of the rack, and turn toward the hardware inside.",
     "sceneTitle": "Start with the system",
     "sceneSubtitle": "Conceptual request → server rack → response tokens.",
     "componentIds": [
       "rack",
-      "links",
+      "tray",
       "cooling"
     ]
   },
   {
     "id": "requirements",
-    "kicker": "02 / Package",
-    "title": "Package",
-    "caption": "The actual packaged chip, photographed by Etched. Switch to the diagram to explore the relationship between compute and memory.",
+    "kicker": "02 / From tray to silicon",
+    "title": "Under the cooling",
+    "caption": "Separate the photographed cooling surfaces, then follow the view into the actual package.",
     "sceneTitle": "Inside the accelerator package",
     "sceneSubtitle": "Compute die and HBM are distinct devices. Arrangement is illustrative.",
     "componentIds": [
-      "specification",
+      "tray",
+      "cooling",
       "package",
-      "compute",
-      "hbm"
+      "power"
     ]
   },
   {
     "id": "architecture",
-    "kicker": "03 / Architecture",
-    "title": "Architecture",
-    "caption": "Trace data from memory through supporting functions to compute, then onward through the chip.",
+    "kicker": "03 / Inside the chip",
+    "title": "Follow the data",
+    "caption": "The package gives way to a conceptual view of memory delivery, data preparation, and compute.",
     "sceneTitle": "Follow the data",
     "sceneSubtitle": "Select a block to inspect its role, inputs, outputs, and tradeoffs.",
     "componentIds": [
@@ -155,6 +155,14 @@ export const chapters = [
 ];
 
 export const components = {
+  tray: {
+    name: 'Compute tray', type: 'Rack hardware',
+    description: 'The official overhead photograph shows a removable compute assembly with a chassis, dense braided tubing, and visible copper cold plates.',
+    why: 'The tray brings power, cooling, connections, and accelerator hardware into one physical assembly.',
+    inputs: 'Electrical power, data connections, and coolant circulation.',
+    outputs: 'Useful computation within its electrical and thermal operating limits.',
+    tradeoff: 'The animated extraction and layer separation explain the relationship between objects; they are not a documented Etched maintenance procedure.', chapter: 1
+  },
   compute: {
     name: 'Compute / math unit', type: 'Architecture',
     description: 'Arithmetic hardware performs the operations required by the intended models. Matrix multiplication is one important operation; model execution also needs supporting functions.',

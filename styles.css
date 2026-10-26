@@ -36,6 +36,7 @@
   .essay-intro p.essay-deck { color:var(--muted); font-size:19px; line-height:1.6; letter-spacing:-.015em; margin-bottom:34px; }
   .essay-section { min-height:90svh; padding:52px 0 80px; border-top:1px solid var(--line); scroll-margin-top:calc(var(--header) + 24px); }
   .essay-section h2 { font-size:32px; line-height:1.3; letter-spacing:-.03em; font-weight:400; margin:18px 0 28px; }
+  .essay-section[data-essay-chapter="0"] p:not(:last-of-type), .essay-section[data-essay-chapter="1"] p:not(:last-of-type) { margin-bottom:clamp(24px,4svh,55px); }
   .essay-section p:last-of-type { margin-bottom:26px; }
   .essay-sources { display:flex; flex-wrap:wrap; align-items:center; gap:8px 17px; padding-top:8px; font:10px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted); }
   .essay-sources a { text-decoration-color:#c7c7c7; }
@@ -119,7 +120,7 @@
   @media (max-width:1100px) and (min-width:901px) { .essay-layout { gap:30px; } .visual-explorer { padding-left:18px; } .essay-title { font-size:37px; } .essay-column p { font-size:16px; } .toolbar-actions { gap:10px; } }
   @media (max-width:900px) {
     :root { --header:64px; --mobile-visual:42svh; }
-    html { scroll-padding-top:calc(var(--header) + var(--mobile-visual) + 24px); }
+    html { scroll-padding-top:calc(var(--header) + 24px); scroll-padding-bottom:calc(var(--mobile-visual) + env(safe-area-inset-bottom,0px) + 24px); }
     .site-header { padding:0 22px; gap:18px; }
     .wordmark { font-size:31px; }
     .site-title { padding-left:18px; }
@@ -129,34 +130,36 @@
     .scroll-cue { display:none; }
     .text-button { font-size:10px; }
     .essay-layout { display:flex; flex-direction:column; width:100%; margin:var(--header) auto 0; gap:0; }
-    .visual-column { position:sticky; top:var(--header); order:-1; z-index:30; width:100%; height:var(--mobile-visual); flex:0 0 var(--mobile-visual); background:var(--paper); border-bottom:1px solid var(--line); }
-    .visual-explorer { border-left:0; padding:12px 22px 0; }
+    .visual-column { position:fixed; top:auto; bottom:0; left:0; right:0; z-index:30; width:100%; height:calc(var(--mobile-visual) + env(safe-area-inset-bottom,0px)); padding-bottom:env(safe-area-inset-bottom,0px); background:var(--paper); border-top:1px solid var(--line); }
+    .visual-explorer { border-left:0; padding:8px 22px 0; }
     .view-heading { padding:0; gap:12px; }
+    .view-heading .eyebrow { display:none; }
     .eyebrow { font-size:9px; }
-    .view-heading h2 { font-size:21px; line-height:1.2; margin:4px 0 4px; }
+    .view-heading h2 { font-size:21px; line-height:1.2; margin:0 0 4px; }
     .view-heading p { display:none; }
-    .view-count { padding-top:8px; font-size:8px; gap:6px; }
+    .view-count { padding-top:2px; font-size:8px; gap:6px; }
     .view-count #view-number { font-size:19px; }
     .visual-canvas-wrap { padding-top:0; }
     .scene-canvas { inset:0 -4px; }
     .scene-canvas > svg { width:100%; height:100%; }
     .visual-toolbar { min-height:29px; font-size:8px; gap:5px; padding-top:0; }
+    .visual-toolbar > span:first-child { display:none; }
     .toolbar-actions { gap:10px; }
     .view-mode-switch button { min-height:25px; padding:3px 7px; }
-    .component-strip { display:flex; padding:4px 1px 7px; }
-    .component-chip { min-height:28px; padding:5px 8px; font-size:9px; }
-    .journey-footer { height:48px; gap:8px; }
+    .component-strip { display:flex; padding:4px 1px 6px; }
+    .component-chip { min-height:25px; padding:4px 8px; font-size:9px; }
+    .journey-footer { height:40px; gap:8px; }
     .view-arrow { flex-basis:27px; height:28px; font-size:15px; }
     .chapter-nav { padding:5px 1px; }
-    .chapter-nav button { flex:1 0 58px; min-height:36px; padding:7px 2px 4px; }
+    .chapter-nav button { flex:1 0 58px; min-height:30px; padding:5px 2px 4px; }
     .chapter-nav .nav-label { font-size:8px; }
     .chapter-nav .nav-number { font-size:7px; margin-bottom:4px; }
-    .essay-column { max-width:680px; width:100%; margin:auto; padding:36px 28px 70px; }
+    .essay-column { max-width:680px; width:100%; margin:auto; padding:36px 28px calc(var(--mobile-visual) + env(safe-area-inset-bottom,0px) + 70px); }
     .essay-intro { min-height:58svh; padding:0 0 52px; }
     .essay-title { font-size:36px; line-height:1.25; margin:16px 0 22px; }
     .essay-intro p.essay-deck { font-size:18px; margin-bottom:28px; }
     .essay-column p { font-size:16px; line-height:1.7; }
-    .essay-section { min-height:58svh; padding:39px 0 50px; scroll-margin-top:calc(var(--header) + var(--mobile-visual) + 24px); }
+    .essay-section { min-height:58svh; padding:39px 0 50px; scroll-margin-top:calc(var(--header) + 24px); }
     .essay-section h2 { font-size:29px; margin:14px 0 23px; }
     .inspector { top:0; right:0; width:min(280px,100%); max-height:100%; padding:13px 17px 18px; box-shadow:0 5px 25px #00000016; }
     .inspector h3 { font-size:20px; margin:8px 0; }
@@ -188,10 +191,20 @@
     :root { --header:65px; }
   }
   @media (max-height:600px) and (max-width:900px) {
-    :root { --mobile-visual:47svh; }
-    .view-heading h2 { font-size:18px; }
+    :root { --mobile-visual:42svh; }
+    .visual-explorer { padding-top:6px; }
+    .view-heading { position:absolute; top:6px; left:22px; right:22px; z-index:2; }
+    .view-heading h2 { font-size:16px; margin:0; }
     .view-heading .eyebrow { display:none; }
-    .journey-footer { height:40px; }
+    .view-count { padding-top:0; }
+    .view-count #view-number { font-size:16px; }
+    .component-strip { padding:2px 1px 4px; }
+    .component-chip { min-height:23px; padding:3px 7px; font-size:8px; }
+    .journey-footer { height:30px; }
+    .view-arrow { height:24px; flex-basis:24px; }
+    .chapter-nav button { min-height:24px; padding:4px 2px; }
+    .chapter-nav .nav-number { display:none; }
+    .visual-toolbar { min-height:25px; }
     .visual-toolbar > span:first-child { display:none; }
   }
   @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; } }

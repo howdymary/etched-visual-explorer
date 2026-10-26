@@ -83,6 +83,11 @@ for (const file of files) {
       await localReference(file, match[1] || match[2], { runtime: true });
     }
   }
+  if (/\.(?:js|mjs)$/i.test(file)) {
+    for (const match of source.matchAll(/['"]\.\/assets\/hardware\/([\w.-]+\.(?:webp|png|jpg))['"]/g)) {
+      await localReference(path.join(base, 'index.html'), './assets/hardware/' + match[1], { runtime: true });
+    }
+  }
   if (path.basename(file) === 'scene.js') {
     for (const match of source.matchAll(/(?:hardwareImage|photoDetail)\('([^']+)'/g)) {
       await localReference(path.join(base, 'index.html'), './assets/hardware/' + match[1], { runtime: true });

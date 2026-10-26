@@ -1,3 +1,5 @@
+import { teardownMarkup, createTeardown } from './teardown.js?v=20261026-rack-in-5';
+
 let sceneSequence = 0;
 
 const point = (x, y) => `${x},${y}`;
@@ -192,14 +194,17 @@ export function createScene(host, callbacks = {}) {
     <rect width="1000" height="800" fill="#ffffff"/>
     <path d="M37 128v-11h11 M952 117h11v11 M37 706v11h11 M952 717h11v-11" class="scene-corner"/>
     ${chapterBuilders.map((builder, i) => `<g class="scene-layer ${i === 0 ? 'is-active' : ''}" data-scene="${i}" aria-hidden="${i !== 0}"><g class="scene-camera">${[0,1,8].includes(i) ? `<g class="scene-presentation" data-presentation="hardware" aria-hidden="false">${hardwareScene(i)}</g><g class="scene-presentation" data-presentation="diagram" aria-hidden="true">${builder()}</g>` : builder()}</g></g>`).join('')}
+    ${teardownMarkup()}
   </svg>`;
   host.innerHTML = svgMarkup.replaceAll('__ID__', prefix);
   host.classList.add('scene-host', 'scene-is-playing');
   const svg = host.querySelector('svg');
+  const teardown = createTeardown(svg);
   const layers = [...host.querySelectorAll('[data-scene]')];
   let activeIndex = 0;
   let selected = '';
   let hardwareMode = true;
+  let chapterProgress = 0;
   let playing = true;
   let frame = 0;
   let lastTime = 0;
@@ -214,9 +219,30 @@ export function createScene(host, callbacks = {}) {
     const path = host.querySelector(`#${node.dataset.path}`);
     return { node, path, length: path.getTotalLength(), chapter: Number(node.closest('[data-scene]').dataset.scene) };
   });
-  const isVisibleComponent = node => node.closest('[data-presentation]')?.getAttribute('aria-hidden') !== 'true';
+  const isVisibleComponent = node => !(hardwareMode && activeIndex <= 2 && teardown.getState().architectureMix < .95) && node.closest('[data-presentation]')?.getAttribute('aria-hidden') !== 'true';
   const setTabStops = () => layers.forEach((layer, i) => layer.querySelectorAll('[data-component]').forEach(node => node.setAttribute('tabindex', i === activeIndex && isVisibleComponent(node) ? '0' : '-1')));
   setTabStops();
+  function syncTeardown() {
+    const show = hardwareMode && activeIndex <= 2;
+    const view = teardown.setPosition(activeIndex, chapterProgress, motionPreference.matches || !playing);
+    teardown.setVisible(show);
+    teardown.element.setAttribute('aria-hidden', String(!show || view.architectureMix >= 1));
+    teardown.element.setAttribute('role','img');
+    teardown.element.setAttribute('aria-label', {
+      rack:'Photograph of the inference rack. One compute tray is selected.',
+      tray:'The photographed compute tray slides out from the rack and turns to an overhead view.',
+      cooling:'Photographed tubing and cold-plate surfaces separate to explain the cooling assembly.',
+      package:'The actual packaged-chip photograph is isolated, then becomes a conceptual architecture view.'
+    }[view.phase]);
+    host.classList.toggle('scene-is-teardown',show && view.architectureMix < 1);
+    for (const index of [0,1,2]) {
+      layers[index].style.opacity = show ? (index === 2 ? String(view.architectureMix) : '0') : '';
+      layers[index].setAttribute('aria-hidden', String(index !== activeIndex || show && view.architectureMix < .95));
+      layers[index].style.animation = show ? 'none' : '';
+      layers[index].style.pointerEvents = show && view.architectureMix < .95 ? 'none' : '';
+    }
+    setTabStops();
+  }
   function updateComponentFocus() {
     clearTimeout(cameraResetTimer);
     if (focusedCamera) {
@@ -258,6 +284,7 @@ export function createScene(host, callbacks = {}) {
     frame = requestAnimationFrame(animate);
   }
   function updateMotion() {
+    syncTeardown();
     host.classList.toggle('scene-is-playing', playing && !motionPreference.matches);
     host.classList.toggle('scene-reduced-motion', motionPreference.matches);
     if (frame) cancelAnimationFrame(frame);
@@ -295,7 +322,7 @@ export function createScene(host, callbacks = {}) {
         const visible = group.dataset.presentation === (hardwareMode ? 'hardware' : 'diagram');
         group.setAttribute('aria-hidden', String(!visible));
       }));
-      setTabStops(); onLeave();
+      syncTeardown(); setTabStops(); onLeave();
     },
     setChapter(index, progress = 0) {
       const next = Math.max(0, Math.min(chapterBuilders.length - 1, Math.round(Number(index) || 0)));
@@ -314,6 +341,8 @@ export function createScene(host, callbacks = {}) {
         if (selected) updateComponentFocus();
       }
       const p = Math.max(0, Math.min(1, Number(progress) || 0));
+      chapterProgress = p;
+      syncTeardown();
       layers[activeIndex].querySelector('.scene-camera').style.setProperty('--scene-pan', `${p * -4}px`);
       layers[activeIndex].querySelector('.scene-camera').style.setProperty('--scene-zoom', 1 + p * .009);
     },

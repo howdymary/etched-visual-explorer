@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="description" content="An engineering essay about connecting workload, silicon, and system decisions, paired with Etched’s real hardware photography and interactive diagrams." />
-    <title>A Faster Way to Find Out — Inside the chip</title>
+    <title>Build From the Rack In — Inside the chip</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23e95932'/%3E%3Cpath d='M10 13h20M10 20h14M10 27h20' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./src/scene.css" />
+    <link rel="stylesheet" href="./styles.css?v=20261026-rack-in-5" />
+    <link rel="stylesheet" href="./src/scene.css?v=20261026-rack-in-5" />
+    <link rel="stylesheet" href="./src/teardown.css?v=20261026-rack-in-5" />
     <script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
-    <script type="module" src="./src/app.js"></script>
+    <script type="module" src="./src/app.js?v=20261026-rack-in-5"></script>
   </head>
   <body>
     <a class="skip-link" href="#essay">Skip to the essay</a>
@@ -40,7 +41,7 @@
       </aside>
     </main>
 
-    <dialog id="sources-dialog" class="sources-dialog" aria-labelledby="sources-title"><div class="dialog-heading"><div><span class="eyebrow">REFERENCES</span><h2 id="sources-title">Behind the diagrams</h2></div><button id="sources-close" class="icon-button" type="button" aria-label="Close sources">×</button></div><p>Real hardware photography from Etched’s current website and official media kit. Diagram mode illustrates engineering relationships; it does not reproduce Etched’s internal floorplan or specifications. Independent editorial study.</p><ol id="source-links" class="source-links"></ol></dialog>
+    <dialog id="sources-dialog" class="sources-dialog" aria-labelledby="sources-title"><div class="dialog-heading"><div><span class="eyebrow">REFERENCES</span><h2 id="sources-title">Behind the diagrams</h2></div><button id="sources-close" class="icon-button" type="button" aria-label="Close sources">×</button></div><p>Real hardware photography from Etched’s current website and official media kit. The opening uses a scroll-controlled explanatory extraction and layer separation. Public photos do not show the hidden board; that detail is not reconstructed. Diagram mode illustrates engineering relationships; it does not reproduce Etched’s internal floorplan or specifications. Independent editorial study.</p><ol id="source-links" class="source-links"></ol></dialog>
     <div id="component-tooltip" class="component-tooltip" role="tooltip" hidden><strong id="tooltip-title"></strong><span id="tooltip-description"></span><small>Click to focus</small></div>
     <div id="view-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </body>

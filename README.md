@@ -1,16 +1,18 @@
-# Inside an inference chip
+# Build From the Rack In
 
 [Open the visual explorer](https://howdymary.github.io/etched-visual-explorer/) · [Source repository](https://github.com/howdymary/etched-visual-explorer)
 
-A technical essay paired with a sticky interactive walkthrough, following an inference chip from a server rack into architecture, microarchitecture, design verification, and physical design, then back to the finished system. Ten essay sections synchronize with ten visual chapters: scrolling the prose updates the adjacent visual, and chapter navigation jumps to the corresponding article section. On narrow screens, the visual stays above the article while the prose scrolls below it. Hover over a component for a short explanation, or click, tap, or use the keyboard to open its details.
+A technical essay for experienced engineers paired with a sticky interactive walkthrough, following an inference chip from a server rack into architecture, microarchitecture, design verification, and physical design, then back to the finished system. Ten essay sections synchronize with ten visual chapters: scrolling the prose updates the adjacent visual, and chapter navigation jumps to the corresponding article section. On narrow screens, the prose reads above a synchronized visual panel at the bottom of the window. Hover over a component for a short explanation, or click, tap, or use the keyboard to open its details.
 
-The experience uses a white background, restrained typography, thin rules, and concise captions, drawing on Etched's current technical publishing style. Views 1, 2, and 9 offer a **Hardware / Diagram** switch. Hardware mode defaults to photographs of Etched's current rack, exposed compute tray, and packaged chip; Diagram mode illustrates engineering relationships. **View original** opens the full-resolution source photograph.
+The experience uses a white background, restrained typography, thin rules, and concise captions, drawing on Etched's current technical publishing style. Its opening follows a continuous sequence: the rack comes into focus, a compute tray slides out and turns to an overhead view, photographed tubing and copper surfaces separate, and the real packaged chip leads into conceptual architecture. Scrolling controls the sequence directly, including reversing it; reduced-motion preferences snap between its stages.
+
+Views 1, 2, 3, and 9 offer a **Hardware / Diagram** switch. Hardware mode defaults to the photographic opening across the first three views and to current hardware photographs in view 9; Diagram mode illustrates engineering relationships. **View original** opens the full-resolution source photograph. The opening is an explanatory arrangement of photographed regions, rather than a documented service procedure; it depicts no invented hidden board detail.
 
 The implementation uses four local WebP photographs, SVG illustrations, CSS, and native JavaScript modules, with no runtime packages, external fonts, backend, or credentials. The WebP files are quality-95 delivery copies of official high-resolution originals. Image provenance, source and display dimensions, and the observed media-use statement are recorded in [`assets/hardware/README.md`](assets/hardware/README.md). No small website cutouts or older board renders are included; a standalone high-resolution photograph of the current bare board was not found in the available official material or broader coverage.
 
 ## Preview locally
 
-For a quick look, open **`preview.html`** in a browser. This generated file contains the complete visualization, embeds the hardware images, and needs no local server. Regenerate it after source changes:
+For a quick look, open **`preview.html`** in a browser. This generated file contains the complete essay and walkthrough, embeds all four hardware photographs and the scroll-controlled opening, and needs no local server. Regenerate it after source changes:
 
 ```sh
 node scripts/standalone.mjs
@@ -71,6 +73,8 @@ Keep `.github/` in the source upload. The workflow generates `dist/` on each run
 | `src/content.js` | Short chapter captions and component explanations. |
 | `src/scene.js` | Conceptual SVG scenes and component regions. |
 | `src/scene.css` | Diagram styling and animation. |
+| `src/teardown.js` | Reversible scroll-controlled rack, tray, cooling, and chip sequence using photographic regions. |
+| `src/teardown.css` | Photographic sequence annotations, layer styling, and motion preferences. |
 | `src/app.js` | Article rendering, synchronized scroll transitions, chapter navigation, and component interactions. |
 | `assets/hardware/` | Four local official hardware photographs and their source record. |
 | `scripts/build.mjs` | Dependency-free build of the essay and visual walkthrough. |
@@ -84,6 +88,6 @@ For content changes, run the integrity checks and review the affected views in a
 
 ## Scope of the diagrams
 
-Hardware mode displays current photographs from Etched's official homepage and media kit. Diagram mode contains conceptual illustrations; its layouts, component regions, and annotations do not reproduce an Etched floorplan, package internals, board connectivity, rack configuration, or benchmark. Values and animation timings are illustrative. This is an independent editorial study; the photographs do not imply Etched's affiliation or endorsement. Company-specific claims and branding need Etched's review before an official release.
+Hardware mode displays current photographs from Etched's official homepage and media kit. The opening separates visible photographed regions to explain their relationship and transitions to a separate chip photograph. It is not a documented mechanical teardown or service procedure, and hidden PCB detail is not depicted. Diagram mode contains conceptual illustrations; its layouts, component regions, and annotations do not reproduce an Etched floorplan, package internals, board connectivity, rack configuration, or benchmark. Values and animation timings are illustrative. This is an independent editorial study; the photographs do not imply Etched's affiliation or endorsement. Company-specific claims and branding need Etched's review before an official release.
 
 The site publishes the essay from `src/essay.js` alongside the visual walkthrough. Primary references are linked within the article and available through the Sources control. Local editorial records under `docs/` remain excluded from Git and the published artifact.

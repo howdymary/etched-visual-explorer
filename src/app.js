@@ -1,21 +1,23 @@
-import { chapters, components, sources } from './content.js';
-import { createScene } from './scene.js';
-import { essay } from './essay.js';
+import { chapters, components, sources } from './content.js?v=20261026-rack-in-5';
+import { createScene } from './scene.js?v=20261026-rack-in-5';
+import { essay } from './essay.js?v=20261026-rack-in-5';
 
 const $ = (id) => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const smallScreen = matchMedia('(max-width: 760px)');
-const state = { chapter:-1, selected:null, paused:reducedMotion.matches, fault:false, hardware:true, lastTrigger:null };
+const state = { chapter:-1, selected:null, paused:reducedMotion.matches, fault:false, hardware:true, progress:0, lastTrigger:null };
 const escapeHTML = (s) => String(s).replace(/[&<>"']/g,(c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const originalPhotos = {
-  0:'https://cdn.sanity.io/images/rwbees58/production/ecfe2c98b278a716b87fcd2c529792bda7ea2e86-4288x2041.png',
-  1:'https://cdn.sanity.io/images/rwbees58/production/144906a8cf416b08acc145128d2bdd4900b42783-13700x10969.jpg',
+  0:'https://cdn.sanity.io/images/rwbees58/production/f1facc083ac390c9607940c12b1eb64d3e387544-2525x3200.png',
+  1:'https://cdn.sanity.io/images/rwbees58/production/5465c0a1c0301168e9aa18acb49febce0dc7c358-3200x1800.png',
+  2:'https://cdn.sanity.io/images/rwbees58/production/144906a8cf416b08acc145128d2bdd4900b42783-13700x10969.jpg',
   8:'https://www.etched.com/media-kit'
 };
-const navLabels = ['System','Package','Architecture','Quantization','Microarchitecture','Verification','Physical design','Tapeout','Server racks','AI & feedback'];
+const navLabels = ['Rack','Tray','Chip','Formats','RTL','Verification','Layout','Tapeout','System','AI tools'];
 
 const paragraphHTML = paragraphs => paragraphs.map(p => `<p>${escapeHTML(p)}</p>`).join('');
 $('essay').innerHTML = `<header class="essay-intro"><div class="eyebrow">${escapeHTML(essay.kicker)}</div><h1 class="essay-title" id="essay-title">${escapeHTML(essay.title)}</h1><p class="essay-deck">${escapeHTML(essay.deck)}</p>${paragraphHTML(essay.introduction)}</header>` + essay.sections.map(section => `<section class="essay-section" id="${escapeHTML(section.id)}" data-essay-chapter="${section.chapter}" aria-labelledby="essay-heading-${section.chapter}"><div class="eyebrow">${String(section.chapter+1).padStart(2,'0')} / ${escapeHTML(navLabels[section.chapter])}</div><h2 id="essay-heading-${section.chapter}">${escapeHTML(section.title)}</h2>${paragraphHTML(section.paragraphs)}${section.sourceLinks?.length ? `<div class="essay-sources">${section.sourceLinks.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.label)} ↗</a>`).join('')}</div>`:''}</section>`).join('') + '<p class="essay-endnote">Independent editorial draft. Hardware photographs are from Etched’s official website and media kit. Diagrams explain engineering relationships and are not Etched specifications.</p>';
+document.title = `${essay.title} — Inside the chip`;
 const essaySections = [...document.querySelectorAll('[data-essay-chapter]')];
 const compactLayout = matchMedia('(max-width: 900px)');
 
@@ -96,12 +98,13 @@ function activateChapter(index,progress=0) {
     $('component-strip').scrollLeft=0;
     $('view-announcement').textContent=`View ${index+1}: ${chapter.title}. ${chapter.caption}`;
   }
+  state.progress = progress;
   scene.setChapter(index,progress);
 }
 
 let scrollFrame=0;
 function readingTop() {
-  return document.querySelector('.site-header').getBoundingClientRect().height + (compactLayout.matches ? $('visual-column').getBoundingClientRect().height + 20 : 55);
+  return document.querySelector('.site-header').getBoundingClientRect().height + (compactLayout.matches ? 24 : 55);
 }
 function updateOnScroll() {
   scrollFrame=0;
@@ -159,13 +162,13 @@ function updateMotionButton() {
 }
 $('motion-toggle').addEventListener('click',() => { state.paused=!state.paused; scene.setPlaying(!state.paused); updateMotionButton(); });
 reducedMotion.addEventListener('change',() => { state.paused=reducedMotion.matches; scene.setPlaying(!state.paused); updateMotionButton(); });
-function hasHardwareView() { return [0,1,8].includes(state.chapter); }
+function hasHardwareView() { return [0,1,2,8].includes(state.chapter); }
 function updateViewMode() {
   const hardware = hasHardwareView() && state.hardware;
   $('view-mode-switch').hidden = !hasHardwareView();
   $('hardware-mode').setAttribute('aria-pressed',String(state.hardware));
   $('diagram-mode').setAttribute('aria-pressed',String(!state.hardware));
-  $('view-medium').textContent = hardware ? 'HARDWARE IMAGERY · ETCHED' : 'CONCEPTUAL DIAGRAM';
+  $('view-medium').textContent = hardware ? state.chapter<3 ? 'PHOTO-BASED EXPLANATORY SEQUENCE' : 'HARDWARE PHOTOGRAPHY · ETCHED' : 'CONCEPTUAL DIAGRAM';
   $('motion-toggle').hidden = hardware;
   $('photo-original').hidden = !hardware;
   if (originalPhotos[state.chapter]) $('photo-original').href = originalPhotos[state.chapter];
@@ -175,12 +178,12 @@ function updateViewMode() {
 }
 function updateHint() {
   const hardware = hasHardwareView() && state.hardware;
-  $('explore-hint').textContent = hardware ? 'Select a component below to inspect' : smallScreen.matches?'Tap a component to inspect':'Hover to inspect · click to focus';
+  $('explore-hint').textContent = hardware ? state.chapter<3 ? 'Scroll to move inward · reverse to retrace' : 'Select a component below to inspect' : smallScreen.matches?'Tap a component to inspect':'Hover to inspect · click to focus';
 }
 for (const [id,value] of [['hardware-mode',true],['diagram-mode',false]]) {
   $(id).addEventListener('click',() => {
     closeInspector(); hideTooltip(); state.hardware=value; updateViewMode();
-    $('view-announcement').textContent = value ? 'Official Etched hardware imagery.' : 'Conceptual engineering diagram.';
+    $('view-announcement').textContent = value ? 'Scroll-controlled photographic hardware sequence.' : 'Conceptual engineering diagram.';
   });
 }
 smallScreen.addEventListener('change',updateHint);
@@ -201,5 +204,5 @@ window.addEventListener('hashchange',() => {
 });
 if (location.hash) {
   const index=chapters.findIndex((chapter) => `#${chapter.id}`===location.hash);
-  if (index>=0) requestAnimationFrame(() => { goToChapter(index,true); updateOnScroll(); });
+  if (index>=0) { goToChapter(index,true); updateOnScroll(); }
 }
