@@ -2,13 +2,15 @@
 
 [Open the visual explorer](https://howdymary.github.io/etched-visual-explorer/) · [Source repository](https://github.com/howdymary/etched-visual-explorer)
 
-A full-screen interactive visualization following an inference chip from a server rack into architecture, microarchitecture, design verification, and physical design, then back to the finished system. Scroll or use the chapter navigation to move through the views. Hover over a component for a short explanation, or click, tap, or use the keyboard to open its details.
+A technical essay paired with a sticky interactive walkthrough, following an inference chip from a server rack into architecture, microarchitecture, design verification, and physical design, then back to the finished system. Ten essay sections synchronize with ten visual chapters: scrolling the prose updates the adjacent visual, and chapter navigation jumps to the corresponding article section. On narrow screens, the visual stays above the article while the prose scrolls below it. Hover over a component for a short explanation, or click, tap, or use the keyboard to open its details.
 
-The experience uses concise on-screen captions and component explanations. The implementation uses local SVG illustrations, CSS, and native JavaScript modules, with no runtime packages, external fonts, backend, or credentials.
+The experience uses a white background, restrained typography, thin rules, and concise captions, drawing on Etched's current technical publishing style. Views 1, 2, and 9 offer a **Hardware / Diagram** switch. Hardware mode defaults to photographs of Etched's current rack, exposed compute tray, and packaged chip; Diagram mode illustrates engineering relationships. **View original** opens the full-resolution source photograph.
+
+The implementation uses four local WebP photographs, SVG illustrations, CSS, and native JavaScript modules, with no runtime packages, external fonts, backend, or credentials. The WebP files are quality-95 delivery copies of official high-resolution originals. Image provenance, source and display dimensions, and the observed media-use statement are recorded in [`assets/hardware/README.md`](assets/hardware/README.md). No small website cutouts or older board renders are included; a standalone high-resolution photograph of the current bare board was not found in the available official material or broader coverage.
 
 ## Preview locally
 
-For a quick look, open **`preview.html`** in a browser. This generated file contains the complete visualization and needs no local server. Regenerate it after source changes:
+For a quick look, open **`preview.html`** in a browser. This generated file contains the complete visualization, embeds the hardware images, and needs no local server. Regenerate it after source changes:
 
 ```sh
 node scripts/standalone.mjs
@@ -64,12 +66,14 @@ Keep `.github/` in the source upload. The workflow generates `dist/` on each run
 | File | Purpose |
 | --- | --- |
 | `index.html` | Page shell, metadata, controls, and accessible structure. |
-| `styles.css` | Full-screen layout, chapter navigation, typography, responsive behavior, and motion preferences. |
+| `styles.css` | Essay and sticky visual layout, chapter navigation, typography, responsive behavior, and motion preferences. |
+| `src/essay.js` | Published essay text, ten synchronized sections, and section source links. |
 | `src/content.js` | Short chapter captions and component explanations. |
 | `src/scene.js` | Conceptual SVG scenes and component regions. |
 | `src/scene.css` | Diagram styling and animation. |
-| `src/app.js` | Scroll transitions, navigation, and component interactions. |
-| `scripts/build.mjs` | Dependency-free build of the visual-only site. |
+| `src/app.js` | Article rendering, synchronized scroll transitions, chapter navigation, and component interactions. |
+| `assets/hardware/` | Four local official hardware photographs and their source record. |
+| `scripts/build.mjs` | Dependency-free build of the essay and visual walkthrough. |
 | `scripts/check.mjs` | Source and deployment integrity checks. |
 | `scripts/standalone.mjs` | Generates the self-contained `preview.html`. |
 | `.github/workflows/deploy-pages.yml` | GitHub Pages build and deployment. |
@@ -80,6 +84,6 @@ For content changes, run the integrity checks and review the affected views in a
 
 ## Scope of the diagrams
 
-All chip and rack illustrations are conceptual. They do not reproduce an Etched floorplan, final package, rack configuration, or benchmark. Values and animation timings are illustrative. Company-specific claims and branding need Etched's review before an official release.
+Hardware mode displays current photographs from Etched's official homepage and media kit. Diagram mode contains conceptual illustrations; its layouts, component regions, and annotations do not reproduce an Etched floorplan, package internals, board connectivity, rack configuration, or benchmark. Values and animation timings are illustrative. This is an independent editorial study; the photographs do not imply Etched's affiliation or endorsement. Company-specific claims and branding need Etched's review before an official release.
 
-The site illustrates engineering relationships. Primary references are available through the Sources control. Local editorial records under `docs/` are excluded from Git and the published artifact.
+The site publishes the essay from `src/essay.js` alongside the visual walkthrough. Primary references are linked within the article and available through the Sources control. Local editorial records under `docs/` remain excluded from Git and the published artifact.

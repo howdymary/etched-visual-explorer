@@ -168,21 +168,30 @@ function aiScene() {
     ${bottom('PROPOSALS STILL NEED ENGINEERING REVIEW & VALIDATION', 'CURRENT FOCUS & PROPOSED USES DISTINGUISHED IN THE STORY')}`;
 }
 
+
+const hardwareImage = (file,x,y,width,height,label) => `<image class="scene-hardware-image" href="./assets/hardware/${file}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${label}"/>`;
+const photoDetail = (file,x,y,w,h,viewBox,nativeWidth,nativeHeight,label) => `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${hardwareImage(file,0,0,nativeWidth,nativeHeight,label)}</svg>`;
+function hardwareScene(index) {
+  if (index === 0) return `${hardwareImage('etched-rack-detail.webp',40,140,920,500,'The exact rack photograph displayed on Etched’s current homepage, showing a compute tray and rack cabling')}${text(500,689,'Etched’s current rack hardware · official homepage photography','scene-hardware-caption','middle')}`;
+  if (index === 1) return `${photoDetail('etched-chip.webp',210,140,580,510,'900 500 1400 1600',3200,2562,'Photograph of Etched’s actual packaged chip, from its official media kit')}${text(500,687,'Packaged chip · official Etched photography','scene-hardware-caption','middle')}`;
+  return `${photoDetail('etched-tray.webp',90,140,395,510,'1100 180 1050 1400',3200,1800,'Actual liquid-cooled Etched compute tray with copper cold plates and braided tubing')}${photoDetail('etched-rack.webp',565,140,335,510,'800 550 1000 2450',2525,3200,'Actual current Etched inference rack, front view')}${text(285,684,'Compute tray','scene-hardware-label','middle')}${text(735,684,'Inference rack','scene-hardware-label','middle')}`;
+}
+
 const chapterBuilders = [rackOpening, packageScene, architectureScene, quantizationScene, microScene, verificationScene, physicalScene, tapeoutScene, racksFinal, aiScene];
 
 /** A dependency-free, accessible SVG stage for the chip design story. */
 export function createScene(host, callbacks = {}) {
   const prefix = `etched-scene-${++sceneSequence}`;
   const svgMarkup = `<svg class="etched-scene" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Interactive diagrams of Etched’s chip design process">
-    <title>From an AI request to silicon and back</title><desc>Ten conceptual engineering diagrams. Select a labeled component to read its role and tradeoffs.</desc>
+    <title>From an AI request to silicon and back</title><desc>Official Etched hardware imagery and ten conceptual engineering diagrams. Use Hardware or Diagram to switch presentations. Select a labeled component to read its role and tradeoffs.</desc>
     <defs>
       <pattern id="__ID__-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".85" fill="#aeb5a8" opacity=".33"/></pattern>
       <marker id="__ID__-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#e95932" stroke-width="1.5"/></marker>
       <linearGradient id="__ID__-wafer" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e4e9e0"/><stop offset=".45" stop-color="#b4c0ae"/><stop offset="1" stop-color="#eff0e9"/></linearGradient>
     </defs>
-    <rect width="1000" height="800" fill="#f4f3ed"/><rect x="37" y="117" width="926" height="600" fill="url(#__ID__-grid)"/>
+    <rect width="1000" height="800" fill="#ffffff"/>
     <path d="M37 128v-11h11 M952 117h11v11 M37 706v11h11 M952 717h11v-11" class="scene-corner"/>
-    ${chapterBuilders.map((builder, i) => `<g class="scene-layer ${i === 0 ? 'is-active' : ''}" data-scene="${i}" aria-hidden="${i !== 0}"><g class="scene-camera">${builder()}</g></g>`).join('')}
+    ${chapterBuilders.map((builder, i) => `<g class="scene-layer ${i === 0 ? 'is-active' : ''}" data-scene="${i}" aria-hidden="${i !== 0}"><g class="scene-camera">${[0,1,8].includes(i) ? `<g class="scene-presentation" data-presentation="hardware" aria-hidden="false">${hardwareScene(i)}</g><g class="scene-presentation" data-presentation="diagram" aria-hidden="true">${builder()}</g>` : builder()}</g></g>`).join('')}
   </svg>`;
   host.innerHTML = svgMarkup.replaceAll('__ID__', prefix);
   host.classList.add('scene-host', 'scene-is-playing');
@@ -190,6 +199,7 @@ export function createScene(host, callbacks = {}) {
   const layers = [...host.querySelectorAll('[data-scene]')];
   let activeIndex = 0;
   let selected = '';
+  let hardwareMode = true;
   let playing = true;
   let frame = 0;
   let lastTime = 0;
@@ -204,7 +214,8 @@ export function createScene(host, callbacks = {}) {
     const path = host.querySelector(`#${node.dataset.path}`);
     return { node, path, length: path.getTotalLength(), chapter: Number(node.closest('[data-scene]').dataset.scene) };
   });
-  const setTabStops = () => layers.forEach((layer, i) => layer.querySelectorAll('[data-component]').forEach(node => node.setAttribute('tabindex', i === activeIndex ? '0' : '-1')));
+  const isVisibleComponent = node => node.closest('[data-presentation]')?.getAttribute('aria-hidden') !== 'true';
+  const setTabStops = () => layers.forEach((layer, i) => layer.querySelectorAll('[data-component]').forEach(node => node.setAttribute('tabindex', i === activeIndex && isVisibleComponent(node) ? '0' : '-1')));
   setTabStops();
   function updateComponentFocus() {
     clearTimeout(cameraResetTimer);
@@ -217,7 +228,7 @@ export function createScene(host, callbacks = {}) {
       focusedCamera = null;
     }
     if (!selected) return;
-    const component = [...layers[activeIndex].querySelectorAll('[data-component]')].find(node => node.dataset.component === selected);
+    const component = [...layers[activeIndex].querySelectorAll('[data-component]')].find(node => node.dataset.component === selected && isVisibleComponent(node));
     if (!component) return;
     const bounds = component.getBBox();
     if (!bounds.width || !bounds.height) return;
@@ -278,6 +289,14 @@ export function createScene(host, callbacks = {}) {
   document.addEventListener('visibilitychange', updateMotion);
   updateMotion();
   return {
+    setHardwareMode(value) {
+      hardwareMode = Boolean(value);
+      layers.forEach(layer => layer.querySelectorAll('[data-presentation]').forEach(group => {
+        const visible = group.dataset.presentation === (hardwareMode ? 'hardware' : 'diagram');
+        group.setAttribute('aria-hidden', String(!visible));
+      }));
+      setTabStops(); onLeave();
+    },
     setChapter(index, progress = 0) {
       const next = Math.max(0, Math.min(chapterBuilders.length - 1, Math.round(Number(index) || 0)));
       if (next !== activeIndex) {

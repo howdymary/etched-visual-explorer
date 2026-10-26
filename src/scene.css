@@ -1,7 +1,7 @@
 @layer diagram {
-.scene-host { width: 100%; position: relative; overflow: hidden; background: #f4f3ed; isolation: isolate; }
-.etched-scene { display: block; width: 100%; height: auto; max-height: 100%; font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Arial, sans-serif); color: #252824; -webkit-tap-highlight-color: transparent; }
-.etched-scene text { fill: #252824; user-select: none; }
+.scene-host { width: 100%; position: relative; overflow: hidden; background: #ffffff; isolation: isolate; }
+.etched-scene { display: block; width: 100%; height: auto; max-height: 100%; font-family: var(--font-sans, 'Helvetica Neue', Helvetica, Arial, sans-serif); color: #272727; -webkit-tap-highlight-color: transparent; }
+.etched-scene text { fill: #272727; user-select: none; }
 .scene-layer { opacity: 0; pointer-events: none; transform: translateY(10px) scale(.975); transform-origin: 50% 50%; transition: opacity 420ms ease, transform 650ms cubic-bezier(.22,.65,.25,1); }
 .scene-layer.is-active { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
 .scene-layer.is-leaving { transform: scale(1.12); }
@@ -10,107 +10,107 @@
 .scene-zooming-out .scene-layer.is-arriving { animation-name: scene-arrive-out; }
 .scene-camera { transform: translateY(var(--scene-pan, 0px)) scale(var(--scene-zoom, 1)); transform-origin: 50% 50%; transition: transform 90ms linear; }
 .scene-mono { font-family: var(--font-mono, 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace); letter-spacing: .045em; }
-.scene-eyebrow { font-size: 15px; fill: #697265 !important; font-weight: 500; letter-spacing: .12em; }
+.scene-eyebrow { font-size: 15px; fill: #6e6e6e !important; font-weight: 500; letter-spacing: .12em; }
 .scene-subtitle { font-size: 23px; font-weight: 450; letter-spacing: -.025em; }
-.scene-caption { font-size: 11px; fill: #737b70 !important; letter-spacing: .04em; }
+.scene-caption { font-size: 11px; fill: #777777 !important; letter-spacing: .04em; }
 .scene-footline .scene-caption { font-size: 10.3px; }
 .scene-large-label { font-size: 23px; font-weight: 500; letter-spacing: -.035em; }
-.scene-body-label { font-size: 17px; fill: #65705f !important; letter-spacing: -.015em; }
+.scene-body-label { font-size: 17px; fill: #6b6b6b !important; letter-spacing: -.015em; }
 .scene-block-label { font-size: 15px; font-weight: 550; letter-spacing: .025em; }
 .scene-label { font-size: 20px; }
-.scene-muted { fill: #6b7565 !important; font-size: 14px; }
+.scene-muted { fill: #707070 !important; font-size: 14px; }
 .scene-accent-label { fill: #d65430 !important; font-size: 14px; font-weight: 600; }
-.scene-hairline, .scene-corner { fill: none; stroke: #c9cdc0; stroke-width: 1; }
-.scene-ground { fill: #dce0d5; opacity: .55; }
+.scene-hairline, .scene-corner { fill: none; stroke: #cacaca; stroke-width: 1; }
+.scene-ground { fill: #dedede; opacity: .55; }
 .scene-component { cursor: pointer; outline: none; }
 .scene-component > rect, .scene-component > path, .scene-component > circle, .scene-component > g { transition: filter 180ms ease, stroke 180ms ease, fill 180ms ease; }
 .scene-component.is-hovered, .scene-component:focus-visible { filter: drop-shadow(0 0 7px rgb(233 89 50 / .2)); }
 .scene-component:focus-visible > rect:first-child, .scene-component:focus-visible > path:first-child, .scene-component:focus-visible > circle:first-child { stroke: #d34d28; stroke-width: 3; stroke-dasharray: 5 4; }
 .scene-component.is-selected { filter: drop-shadow(0 0 6px rgb(233 89 50 / .24)); }
-.scene-component.is-selected .scene-inspect-dot { fill: #e95932; stroke: #e95932; }
+.scene-component.is-selected .scene-inspect-dot { fill: #ff642e; stroke: #ff642e; }
 .scene-component.is-selected .scene-inspect-plus { stroke: #fff; }
-.scene-inspect-dot { fill: #f4f3ed; stroke: #929c88; stroke-width: 1.3; }
-.scene-inspect-plus { fill: none; stroke: #68745e; stroke-width: 1.4; }
-.scene-wire { fill: none; stroke: #939f89; stroke-width: 2; }
-.scene-flow { fill: none; stroke: #e95932; stroke-width: 2.3; stroke-dasharray: 5 7; stroke-linecap: round; }
-.scene-particle { fill: #e95932; stroke: #f4f3ed; stroke-width: 1.5; opacity: 0; }
+.scene-inspect-dot { fill: #ffffff; stroke: #979797; stroke-width: 1.3; }
+.scene-inspect-plus { fill: none; stroke: #6e6e6e; stroke-width: 1.4; }
+.scene-wire { fill: none; stroke: #999999; stroke-width: 2; }
+.scene-flow { fill: none; stroke: #ff642e; stroke-width: 2.3; stroke-dasharray: 5 7; stroke-linecap: round; }
+.scene-particle { fill: #ff642e; stroke: #ffffff; stroke-width: 1.5; opacity: 0; }
 .scene-is-playing .scene-layer.is-active .scene-particle { opacity: 1; }
 .scene-is-playing .scene-flow { animation: scene-dash 1.6s linear infinite; }
-.scene-arrow { fill: none; stroke: #e95932; stroke-width: 2.3; }
-.scene-callout { fill: none; stroke: #a8b09f; stroke-width: 1.2; }
-.scene-tag { fill: #e9ece2; stroke: #c6ceba; stroke-width: .8; }
-.scene-tag-label { fill: #5d6a53 !important; font-size: 12px; }
-.scene-node { fill: #e95932; }
-.scene-accent-fill { fill: #e95932; }
-.scene-sage-fill { fill: #87977b; }
-.scene-cell { fill: #b6c2a9; stroke: #8fa07e; stroke-width: .7; }
+.scene-arrow { fill: none; stroke: #ff642e; stroke-width: 2.3; }
+.scene-callout { fill: none; stroke: #acacac; stroke-width: 1.2; }
+.scene-tag { fill: #eaeaea; stroke: #c9c9c9; stroke-width: .8; }
+.scene-tag-label { fill: #636363 !important; font-size: 12px; }
+.scene-node { fill: #ff642e; }
+.scene-accent-fill { fill: #ff642e; }
+.scene-sage-fill { fill: #8f8f8f; }
+.scene-cell { fill: #bcbcbc; stroke: #979797; stroke-width: .7; }
 .scene-cell-accent { fill: #d1b29b; }
-.scene-rack-frame { fill: #d0d7c7; stroke: #78876d; stroke-width: 1.5; }
-.scene-rack-face { fill: #b7c2ab; stroke: #7e8b73; stroke-width: .8; }
-.scene-rack-side { fill: #99a58f; stroke: #78876d; stroke-width: 1.5; }
-.scene-rack-top { fill: #e0e5d8; stroke: #8e9c82; stroke-width: 1.5; }
-.scene-rack-blade { fill: #e8ebdf; stroke: #89977c; stroke-width: .8; }
-.scene-rack-header { fill: #c4ceba; stroke: #8a987e; stroke-width: .8; }
-.scene-rack-small { font-size: 10px; fill: #59694c !important; }
-.scene-rack-seam { fill: none; stroke: #b8c3ae; stroke-width: 1; }
-.scene-vent { fill: #aab79e; }
-.scene-blade-port { fill: #bec9b3; stroke: #93a087; stroke-width: .8; }
-.scene-status { fill: #e95932; }
-.scene-fan-ring { fill: #c4ceba; stroke: #90a080; stroke-width: 1; }
-.scene-fan-spokes { stroke: #90a080; stroke-width: 1.2; }
-.scene-rack-screw { fill: #79896c; }
-.scene-rack-foot { fill: #7e8a74; }
+.scene-rack-frame { fill: #d3d3d3; stroke: #808080; stroke-width: 1.5; }
+.scene-rack-face { fill: #bcbcbc; stroke: #848484; stroke-width: .8; }
+.scene-rack-side { fill: #9f9f9f; stroke: #808080; stroke-width: 1.5; }
+.scene-rack-top { fill: #e2e2e2; stroke: #959595; stroke-width: 1.5; }
+.scene-rack-blade { fill: #e9e9e9; stroke: #909090; stroke-width: .8; }
+.scene-rack-header { fill: #c9c9c9; stroke: #919191; stroke-width: .8; }
+.scene-rack-small { font-size: 10px; fill: #616161 !important; }
+.scene-rack-seam { fill: none; stroke: #bdbdbd; stroke-width: 1; }
+.scene-vent { fill: #b0b0b0; }
+.scene-blade-port { fill: #c3c3c3; stroke: #999999; stroke-width: .8; }
+.scene-status { fill: #ff642e; }
+.scene-fan-ring { fill: #c9c9c9; stroke: #989898; stroke-width: 1; }
+.scene-fan-spokes { stroke: #989898; stroke-width: 1.2; }
+.scene-rack-screw { fill: #818181; }
+.scene-rack-foot { fill: #848484; }
 .scene-quiet-rack { opacity: .44; }
-.scene-cooling-pipe { fill: none; stroke: #9aa68f; stroke-width: 7; stroke-linecap: round; }
-.scene-cooling-branch { fill: none; stroke: #a9b59d; stroke-width: 4; }
-.scene-cooling-manifold { fill: none; stroke: #b5c0aa; stroke-width: 9; stroke-linecap: round; }
-.scene-substrate { fill: #d6ddcc; stroke: #8d9c7e; stroke-width: 1.5; }
-.scene-substrate-top { fill: #e8ecdf; stroke: #9ba88e; stroke-width: 1.3; }
-.scene-substrate-side { fill: #b9c6ab; stroke: #8d9c7e; stroke-width: 1.4; }
-.scene-package-pad { fill: #a9ad84; }
-.scene-package-trace { fill: none; stroke: #9fae90; stroke-width: 1.5; stroke-dasharray: 3 3; }
-.scene-hbm-top { fill: #e1e5d8; stroke: #7f8d72; stroke-width: .7; }
-.scene-hbm-front { fill: #b0bfa2; stroke: #7f8d72; stroke-width: .7; }
-.scene-hbm-side { fill: #94a487; stroke: #7f8d72; stroke-width: .7; }
-.scene-hbm-label { fill: #586b4c !important; font-size: 13px; font-weight: 600; letter-spacing: .05em; }
-.scene-die-rim { fill: #a3b292; stroke: #7e8c6f; stroke-width: 1; }
-.scene-die { fill: #dfe5d5; stroke: #7b8b6c; stroke-width: 1.2; }
+.scene-cooling-pipe { fill: none; stroke: #a0a0a0; stroke-width: 7; stroke-linecap: round; }
+.scene-cooling-branch { fill: none; stroke: #afafaf; stroke-width: 4; }
+.scene-cooling-manifold { fill: none; stroke: #bababa; stroke-width: 9; stroke-linecap: round; }
+.scene-substrate { fill: #d9d9d9; stroke: #949494; stroke-width: 1.5; }
+.scene-substrate-top { fill: #e9e9e9; stroke: #a1a1a1; stroke-width: 1.3; }
+.scene-substrate-side { fill: #bfbfbf; stroke: #949494; stroke-width: 1.4; }
+.scene-package-pad { fill: #a7a7a7; }
+.scene-package-trace { fill: none; stroke: #a6a6a6; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.scene-hbm-top { fill: #e2e2e2; stroke: #868686; stroke-width: .7; }
+.scene-hbm-front { fill: #b7b7b7; stroke: #868686; stroke-width: .7; }
+.scene-hbm-side { fill: #9c9c9c; stroke: #868686; stroke-width: .7; }
+.scene-hbm-label { fill: #626262 !important; font-size: 13px; font-weight: 600; letter-spacing: .05em; }
+.scene-die-rim { fill: #aaaaaa; stroke: #858585; stroke-width: 1; }
+.scene-die { fill: #e1e1e1; stroke: #838383; stroke-width: 1.2; }
 .scene-compute-mini { fill: #df9a77; stroke: #c65e37; stroke-width: 1.2; opacity: .92; }
 .scene-die-label { font-size: 15px; font-weight: 600; fill: #713d29 !important; }
-.scene-die-route { fill: none; stroke: #8c9d7b; stroke-width: 2; }
-.scene-chip-boundary { fill: #eceee5; fill-opacity: .85; stroke: #9ba88f; stroke-width: 1.4; }
+.scene-die-route { fill: none; stroke: #949494; stroke-width: 2; }
+.scene-chip-boundary { fill: #ececec; fill-opacity: .85; stroke: #a1a1a1; stroke-width: 1.4; }
 .scene-compute { fill: #edb89b; stroke: #cf7650; stroke-width: 1.4; }
 .scene-compute-cell { fill: #e4a37d; stroke: #c7835d; stroke-width: .9; }
-.scene-memory-block { fill: #cbd7bf; stroke: #8e9f7e; stroke-width: 1.3; }
-.scene-memory-layer { fill: #dae3d0; stroke: #a3b294; stroke-width: 1; }
-.scene-storage { fill: #dce4d1; stroke: #99aa87; stroke-width: 1.3; }
-.scene-storage-cell { fill: #b8c7a7; stroke: #96aa81; stroke-width: .8; }
-.scene-control { fill: #e2e6d9; stroke: #a0ad90; stroke-width: 1.3; }
+.scene-memory-block { fill: #d1d1d1; stroke: #969696; stroke-width: 1.3; }
+.scene-memory-layer { fill: #dedede; stroke: #aaaaaa; stroke-width: 1; }
+.scene-storage { fill: #dfdfdf; stroke: #a1a1a1; stroke-width: 1.3; }
+.scene-storage-cell { fill: #bfbfbf; stroke: #9f9f9f; stroke-width: .8; }
+.scene-control { fill: #e3e3e3; stroke: #a6a6a6; stroke-width: 1.3; }
 .scene-conversion { fill: #e9decd; stroke: #baa88b; stroke-width: 1.3; }
-.scene-interface { fill: #d8e0ce; stroke: #9cae8a; stroke-width: 1.3; }
-.scene-bus { fill: none; stroke: #98a58b; stroke-width: 5; }
-.scene-format-card { fill: #ecefe5; stroke: #aebba1; stroke-width: 1.2; }
+.scene-interface { fill: #dcdcdc; stroke: #a5a5a5; stroke-width: 1.3; }
+.scene-bus { fill: none; stroke: #9e9e9e; stroke-width: 5; }
+.scene-format-card { fill: #ededed; stroke: #b4b4b4; stroke-width: 1.2; }
 .scene-format-output { fill: #f0e1d3; stroke: #d5ad8f; }
-.scene-number-cell { fill: #dbe4cf; stroke: #bdcbae; stroke-width: .7; }
+.scene-number-cell { fill: #dfdfdf; stroke: #c4c4c4; stroke-width: .7; }
 .scene-format-output .scene-number-cell { fill: #ecd0b9; stroke: #d5b195; }
-.scene-number-hot { fill: #c3d0b4; }
+.scene-number-hot { fill: #c9c9c9; }
 .scene-format-output .scene-number-hot { fill: #e2af8a; }
-.scene-number { font-size: 12px; letter-spacing: -.06em; fill: #57664c !important; }
+.scene-number { font-size: 12px; letter-spacing: -.06em; fill: #5f5f5f !important; }
 .scene-format-output .scene-number { fill: #85533a !important; }
 .scene-format-total { font-size: 14px; }
-.scene-bracket { fill: none; stroke: #acb59f; stroke-width: 1.2; }
-.scene-datapath-block { fill: #dfe7d3; stroke: #9aae85; stroke-width: 1.5; }
+.scene-bracket { fill: none; stroke: #b0b0b0; stroke-width: 1.2; }
+.scene-datapath-block { fill: #e2e2e2; stroke: #a3a3a3; stroke-width: 1.5; }
 .scene-math-block { fill: #edb89b; stroke: #cf7650; }
-.scene-operation-symbol { font-size: 49px; font-weight: 400; fill: #536a42 !important; }
+.scene-operation-symbol { font-size: 49px; font-weight: 400; fill: #5f5f5f !important; }
 .scene-math-block ~ text.scene-operation-symbol { fill: #9c4e2b !important; }
-.scene-datapath-small { font-size: 14px; fill: #6b735e !important; }
-.scene-clock-wire { fill: none; stroke: #9aaa8a; stroke-width: 1.2; stroke-dasharray: 3 4; }
-.scene-clock-wave { fill: none; stroke: #8b9c79; stroke-width: 1.8; }
-.scene-testbench-boundary { fill: #ebece3; fill-opacity: .62; stroke: #adb79f; stroke-width: 1.2; stroke-dasharray: 7 5; }
-.scene-test-source { fill: #dbe4cf; stroke: #a0b18b; stroke-width: 1.3; }
-.scene-reference { fill: #dde8d4; stroke: #97ae81; stroke-width: 1.3; }
+.scene-datapath-small { font-size: 14px; fill: #6e6e6e !important; }
+.scene-clock-wire { fill: none; stroke: #a2a2a2; stroke-width: 1.2; stroke-dasharray: 3 4; }
+.scene-clock-wave { fill: none; stroke: #939393; stroke-width: 1.8; }
+.scene-testbench-boundary { fill: #ebebeb; fill-opacity: .62; stroke: #b1b1b1; stroke-width: 1.2; stroke-dasharray: 7 5; }
+.scene-test-source { fill: #dfdfdf; stroke: #a8a8a8; stroke-width: 1.3; }
+.scene-reference { fill: #e2e2e2; stroke: #a2a2a2; stroke-width: 1.3; }
 .scene-comparator { fill: #e9e4d5; stroke: #b6ab8f; stroke-width: 1.5; }
-.scene-compare-symbol { font-size: 48px; fill: #6f715c !important; }
+.scene-compare-symbol { font-size: 48px; fill: #6e6e6e !important; }
 .scene-dv-fault { opacity: 0; transition: opacity 200ms; pointer-events: none; }
 .scene-dv-pass { opacity: 1; transition: opacity 200ms; }
 .scene-has-fault .scene-dv-fault { opacity: 1; }
@@ -118,25 +118,25 @@
 .scene-has-fault .scene-comparator { stroke: #d65d35; fill: #f0d4c2; }
 .scene-has-fault .scene-compare-symbol { fill: #bf4c28 !important; }
 .scene-feedback-wire { fill: none; stroke: #df784e; stroke-width: 1.7; stroke-dasharray: 4 4; }
-.scene-placed-cell { fill: #c6d2b8; stroke: #a5b596; stroke-width: .6; }
-.scene-placed-cell-dark { fill: #a8bb96; }
+.scene-placed-cell { fill: #cbcbcb; stroke: #adadad; stroke-width: .6; }
+.scene-placed-cell-dark { fill: #b1b1b1; }
 .scene-compute-physical { fill: #e8b091; stroke: #c88661; stroke-width: 1; }
 .scene-physical-math-cell { fill: #dc9b74; stroke: #c78660; stroke-width: .6; }
-.scene-layout-route { fill: none; stroke: #849a70; stroke-width: 1.6; stroke-linejoin: round; }
+.scene-layout-route { fill: none; stroke: #8f8f8f; stroke-width: 1.6; stroke-linejoin: round; }
 .scene-route-1 { stroke: #ab8963; }
-.scene-route-2 { stroke: #a0ad8c; stroke-width: 2.2; }
-.scene-congestion { fill: #e95932; fill-opacity: .08; stroke: #d9784f; stroke-width: 1.2; stroke-dasharray: 3 4; }
-.scene-clock-tree { fill: none; stroke: #85996d; stroke-width: 2.6; }
-.scene-clock-root { fill: #83956e; }
-.scene-power-grid { fill: none; stroke: #abb899; stroke-width: .7; opacity: .65; pointer-events: stroke; }
-.scene-layout-sheet { fill: #e9ece1; stroke: #a2af92; stroke-width: 1.2; }
-.scene-sheet-layout { fill: #c7d3bb; stroke: #91a27d; stroke-width: 1; }
-.scene-sheet-cell { fill: #aabb97; stroke: #8a9e74; stroke-width: .6; }
-.scene-wafer { stroke: #99aa88; stroke-width: 1.5; }
-.scene-wafer-inner { fill: none; stroke: #a3b494; stroke-width: .8; }
-.scene-wafer-die { fill: #c0cdb1; fill-opacity: .65; stroke: #81966d; stroke-width: .6; }
+.scene-route-2 { stroke: #a5a5a5; stroke-width: 2.2; }
+.scene-congestion { fill: #ff642e; fill-opacity: .08; stroke: #d9784f; stroke-width: 1.2; stroke-dasharray: 3 4; }
+.scene-clock-tree { fill: none; stroke: #8e8e8e; stroke-width: 2.6; }
+.scene-clock-root { fill: #8b8b8b; }
+.scene-power-grid { fill: none; stroke: #b1b1b1; stroke-width: .7; opacity: .65; pointer-events: stroke; }
+.scene-layout-sheet { fill: #eaeaea; stroke: #a8a8a8; stroke-width: 1.2; }
+.scene-sheet-layout { fill: #cdcdcd; stroke: #999999; stroke-width: 1; }
+.scene-sheet-cell { fill: #b2b2b2; stroke: #939393; stroke-width: .6; }
+.scene-wafer { stroke: #a1a1a1; stroke-width: 1.5; }
+.scene-wafer-inner { fill: none; stroke: #ababab; stroke-width: .8; }
+.scene-wafer-die { fill: #c6c6c6; fill-opacity: .65; stroke: #8b8b8b; stroke-width: .6; }
 .scene-wafer-die-highlight { fill: #dcaa83; stroke: #b67d52; }
-.scene-wafer-notch { fill: #f4f3ed; stroke: #99aa88; stroke-width: 1; }
+.scene-wafer-notch { fill: #ffffff; stroke: #a1a1a1; stroke-width: 1; }
 .scene-ai-ring { fill: none; stroke: #d3a98e; stroke-width: 1.3; stroke-dasharray: 2 7; }
 .scene-ai-core { fill: #f1d6c3; stroke: #d18d64; stroke-width: 1.3; }
 @keyframes scene-dash { to { stroke-dashoffset: -24; } }
@@ -152,4 +152,10 @@
 .scene-reduced-motion .scene-flow { animation: none; }
 .scene-reduced-motion .scene-layer.is-arriving { animation: none; }
 
+
+.scene-presentation[aria-hidden="true"] { display: none; }
+.scene-hardware-image { pointer-events: none; }
+.scene-hardware-label { font-size: 17px; fill: #4d4d4d !important; font-weight: 400; }
+.scene-hardware-caption { font-size: 12px; fill: #656565 !important; }
+.scene-corner { display: none; }
 }

@@ -36,4 +36,4 @@ for (const entry of entries) {
   await cp(path.join(root, entry), target, { recursive: true, dereference: false });
 }
 await writeFile(path.join(destination, '.nojekyll'), '');
-console.log('Built dist/ with the visual experience and local assets. Ready for GitHub Pages.');
+console.log('Built dist/ with the essay, synchronized walkthrough, and local photographs. Ready for GitHub Pages.');

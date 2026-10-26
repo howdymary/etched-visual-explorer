@@ -3,7 +3,7 @@ export const chapters = [
     "id": "experience",
     "kicker": "01 / System",
     "title": "System",
-    "caption": "Follow an AI request into the infrastructure that turns model computation into a stream of tokens.",
+    "caption": "From packaged silicon to a complete rack: the system is the unit of performance.",
     "sceneTitle": "Start with the system",
     "sceneSubtitle": "Conceptual request → server rack → response tokens.",
     "componentIds": [
@@ -16,7 +16,7 @@ export const chapters = [
     "id": "requirements",
     "kicker": "02 / Package",
     "title": "Package",
-    "caption": "Explore how compute, nearby HBM, and interfaces share a package shaped by workload requirements.",
+    "caption": "The actual packaged chip, photographed by Etched. Switch to the diagram to explore the relationship between compute and memory.",
     "sceneTitle": "Inside the accelerator package",
     "sceneSubtitle": "Compute die and HBM are distinct devices. Arrangement is illustrative.",
     "componentIds": [
@@ -334,6 +334,8 @@ export const components = {
 };
 
 export const sources = [
+  { label: "Etched — official hardware imagery and media kit", url: "https://www.etched.com/media-kit" },
+  { label: "Etched — Frontier Inference Clusters", url: "https://www.etched.com/progress/frontier-inference-clusters" },
   { label: 'Etched · Chips, racks, software, and manufacturing', url: 'https://www.etched.com/' },
   { label: 'NVIDIA · LLM inference benchmarking terminology', url: 'https://developer.nvidia.com/blog/llm-benchmarking-fundamental-concepts/' },
   { label: 'NVIDIA cuDNN · Block scaling formats', url: 'https://docs.nvidia.com/cudnn/operations/BlockScaling/' },

@@ -83,6 +83,11 @@ for (const file of files) {
       await localReference(file, match[1] || match[2], { runtime: true });
     }
   }
+  if (path.basename(file) === 'scene.js') {
+    for (const match of source.matchAll(/(?:hardwareImage|photoDetail)\('([^']+)'/g)) {
+      await localReference(path.join(base, 'index.html'), './assets/hardware/' + match[1], { runtime: true });
+    }
+  }
   if (/\.(?:js|mjs)$/i.test(file)) {
     for (const match of source.matchAll(/(?:import|export)\s+(?:[^;"']*?\s+from\s*)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g)) {
       const ref = match[1] || match[2];
@@ -97,6 +102,12 @@ try {
   const { chapters, components } = await import(pathToFileURL(path.join(base, 'src/content.js')).href);
   if (!Array.isArray(chapters) || !chapters.length) fail('Chapter content must contain a nonempty chapters array.');
   if (!components || typeof components !== 'object') fail('Component content must define the components map.');
+  const { essay } = await import(pathToFileURL(path.join(base, 'src/essay.js')).href);
+  if (essay.sections.length !== chapters.length) fail('Every visual chapter needs a paired essay section.');
+  for (const [index, section] of essay.sections.entries()) {
+    if (section.chapter !== index || section.id !== chapters[index]?.id) fail(`Essay/visual chapter mismatch at section ${index}.`);
+    if (!section.title || !section.paragraphs?.length) fail(`Empty essay section ${section.id}.`);
+  }
   const ids = new Set();
   for (const [index, chapter] of (chapters || []).entries()) {
     if (!chapter.id || ids.has(chapter.id)) fail(`Missing or duplicate chapter id at index ${index}.`);
@@ -120,8 +131,8 @@ if (checkDist) {
   try { await access(path.join(base, '.nojekyll')); } catch { fail('Built artifact is missing .nojekyll.'); }
   try {
     await access(path.join(base, 'docs/source-essay.md'));
-    fail('The source essay must not be included in the visual-only deployment artifact.');
-  } catch { /* Source notes are not part of the delivered visualization. */ }
+    fail('Private editorial notes must not be included in the deployment artifact.');
+  } catch { /* Private source notes are not part of the delivered essay and walkthrough. */ }
   for (const file of files) {
     const relative = path.relative(base, file);
     try {
@@ -137,5 +148,5 @@ if (errors.length) {
   console.error(`Static integrity check failed (${errors.length}):\n${errors.map(message => `  • ${message}`).join('\n')}`);
   process.exitCode = 1;
 } else {
-  console.log(`Verified ${checkDist ? 'deployment artifact' : 'site sources'}: ${files.length} files, ${checkedReferences} local references, chapter/component links, and no external runtime assets.`);
+  console.log(`Verified ${checkDist ? 'deployment artifact' : 'site sources'}: ${files.length} files, ${checkedReferences} local references, essay/visual pairings, chapter/component links, and no external runtime assets.`);
 }

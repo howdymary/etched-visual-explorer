@@ -1,14 +1,24 @@
 import { chapters, components, sources } from './content.js';
 import { createScene } from './scene.js';
+import { essay } from './essay.js';
 
 const $ = (id) => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const smallScreen = matchMedia('(max-width: 760px)');
-const state = { chapter:-1, selected:null, paused:reducedMotion.matches, fault:false, lastTrigger:null };
+const state = { chapter:-1, selected:null, paused:reducedMotion.matches, fault:false, hardware:true, lastTrigger:null };
 const escapeHTML = (s) => String(s).replace(/[&<>"']/g,(c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const originalPhotos = {
+  0:'https://cdn.sanity.io/images/rwbees58/production/ecfe2c98b278a716b87fcd2c529792bda7ea2e86-4288x2041.png',
+  1:'https://cdn.sanity.io/images/rwbees58/production/144906a8cf416b08acc145128d2bdd4900b42783-13700x10969.jpg',
+  8:'https://www.etched.com/media-kit'
+};
 const navLabels = ['System','Package','Architecture','Quantization','Microarchitecture','Verification','Physical design','Tapeout','Server racks','AI & feedback'];
 
-$('scroll-track').innerHTML = chapters.map((chapter,i) => `<section class="scroll-step" id="${escapeHTML(chapter.id)}" aria-label="View ${i+1}: ${escapeHTML(chapter.title)}"><h2 class="sr-only">${escapeHTML(chapter.title)}</h2></section>`).join('');
+const paragraphHTML = paragraphs => paragraphs.map(p => `<p>${escapeHTML(p)}</p>`).join('');
+$('essay').innerHTML = `<header class="essay-intro"><div class="eyebrow">${escapeHTML(essay.kicker)}</div><h1 class="essay-title" id="essay-title">${escapeHTML(essay.title)}</h1><p class="essay-deck">${escapeHTML(essay.deck)}</p>${paragraphHTML(essay.introduction)}</header>` + essay.sections.map(section => `<section class="essay-section" id="${escapeHTML(section.id)}" data-essay-chapter="${section.chapter}" aria-labelledby="essay-heading-${section.chapter}"><div class="eyebrow">${String(section.chapter+1).padStart(2,'0')} / ${escapeHTML(navLabels[section.chapter])}</div><h2 id="essay-heading-${section.chapter}">${escapeHTML(section.title)}</h2>${paragraphHTML(section.paragraphs)}${section.sourceLinks?.length ? `<div class="essay-sources">${section.sourceLinks.map(source => `<a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.label)} ↗</a>`).join('')}</div>`:''}</section>`).join('') + '<p class="essay-endnote">Independent editorial draft. Hardware photographs are from Etched’s official website and media kit. Diagrams explain engineering relationships and are not Etched specifications.</p>';
+const essaySections = [...document.querySelectorAll('[data-essay-chapter]')];
+const compactLayout = matchMedia('(max-width: 900px)');
+
 $('chapter-nav').innerHTML = chapters.map((chapter,i) => `<button type="button" data-chapter-link="${i}" aria-label="View ${i+1}: ${escapeHTML(chapter.title)}"><span class="nav-number">${String(i+1).padStart(2,'0')}</span><span class="nav-label">${navLabels[i]}</span></button>`).join('');
 $('source-links').innerHTML = sources.map((source) => `<li><a href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(source.label)}</a></li>`).join('');
 
@@ -75,6 +85,7 @@ function activateChapter(index,progress=0) {
     $('view-caption').textContent=chapter.caption;
     $('view-number').textContent=String(index+1).padStart(2,'0');
     $('fault-toggle').hidden=index!==5;
+    updateViewMode();
     $('previous-view').disabled=index===0;
     $('next-view').disabled=index===chapters.length-1;
     const buttons=[...document.querySelectorAll('[data-chapter-link]')];
@@ -89,19 +100,28 @@ function activateChapter(index,progress=0) {
 }
 
 let scrollFrame=0;
+function readingTop() {
+  return document.querySelector('.site-header').getBoundingClientRect().height + (compactLayout.matches ? $('visual-column').getBoundingClientRect().height + 20 : 55);
+}
 function updateOnScroll() {
   scrollFrame=0;
+  const readingLine = readingTop();
+  let active = 0;
+  for (const section of essaySections) {
+    if (section.getBoundingClientRect().top <= readingLine + 25) active=Number(section.dataset.essayChapter);
+  }
+  const section = essaySections[active];
+  const rect = section.getBoundingClientRect();
+  const progress = Math.max(0,Math.min(1,(readingLine-rect.top)/Math.max(1,rect.height)));
+  activateChapter(active,progress);
   const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);
-  const position=Math.max(0,Math.min(chapters.length-1,scrollY/max*(chapters.length-1)));
-  const active=Math.round(position);
-  activateChapter(active,Math.max(0,Math.min(1,position-active+.5)));
-  $('journey-progress').style.transform=`scaleX(${position/(chapters.length-1)})`;
+  $('journey-progress').style.transform=`scaleX(${Math.min(1,scrollY/max)})`;
 }
 function scheduleScroll() { if (!scrollFrame) scrollFrame=requestAnimationFrame(updateOnScroll); }
 function goToChapter(index,instant=false) {
   const target=Math.max(0,Math.min(chapters.length-1,index));
-  const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);
-  window.scrollTo({top:target/(chapters.length-1)*max,behavior:instant || reducedMotion.matches?'instant':'smooth'});
+  const section=essaySections[target];
+  window.scrollTo({top:Math.max(0,scrollY+section.getBoundingClientRect().top-readingTop()),behavior:instant || reducedMotion.matches?'instant':'smooth'});
   history.replaceState(null,'',`#${chapters[target].id}`);
 }
 window.addEventListener('scroll',scheduleScroll,{passive:true});
@@ -139,7 +159,30 @@ function updateMotionButton() {
 }
 $('motion-toggle').addEventListener('click',() => { state.paused=!state.paused; scene.setPlaying(!state.paused); updateMotionButton(); });
 reducedMotion.addEventListener('change',() => { state.paused=reducedMotion.matches; scene.setPlaying(!state.paused); updateMotionButton(); });
-function updateHint() { $('explore-hint').textContent=smallScreen.matches?'Tap a component to inspect':'Hover to inspect · click to focus'; }
+function hasHardwareView() { return [0,1,8].includes(state.chapter); }
+function updateViewMode() {
+  const hardware = hasHardwareView() && state.hardware;
+  $('view-mode-switch').hidden = !hasHardwareView();
+  $('hardware-mode').setAttribute('aria-pressed',String(state.hardware));
+  $('diagram-mode').setAttribute('aria-pressed',String(!state.hardware));
+  $('view-medium').textContent = hardware ? 'HARDWARE IMAGERY · ETCHED' : 'CONCEPTUAL DIAGRAM';
+  $('motion-toggle').hidden = hardware;
+  $('photo-original').hidden = !hardware;
+  if (originalPhotos[state.chapter]) $('photo-original').href = originalPhotos[state.chapter];
+  $('photo-original').textContent = state.chapter===8 ? 'Original photos ↗' : 'View original ↗';
+  scene.setHardwareMode(state.hardware);
+  updateHint();
+}
+function updateHint() {
+  const hardware = hasHardwareView() && state.hardware;
+  $('explore-hint').textContent = hardware ? 'Select a component below to inspect' : smallScreen.matches?'Tap a component to inspect':'Hover to inspect · click to focus';
+}
+for (const [id,value] of [['hardware-mode',true],['diagram-mode',false]]) {
+  $(id).addEventListener('click',() => {
+    closeInspector(); hideTooltip(); state.hardware=value; updateViewMode();
+    $('view-announcement').textContent = value ? 'Official Etched hardware imagery.' : 'Conceptual engineering diagram.';
+  });
+}
 smallScreen.addEventListener('change',updateHint);
 $('fault-toggle').addEventListener('click',() => {
   state.fault=!state.fault; scene.setVerificationFault(state.fault);
@@ -152,6 +195,10 @@ $('sources-close').addEventListener('click',() => $('sources-dialog').close());
 $('sources-dialog').addEventListener('click',(event) => { if (event.target===$('sources-dialog')) { const r=$('sources-dialog').getBoundingClientRect(); if (event.clientX<r.left || event.clientX>r.right || event.clientY<r.top || event.clientY>r.bottom) $('sources-dialog').close(); } });
 document.addEventListener('visibilitychange',() => scene.setPlaying(!state.paused && !document.hidden));
 updateMotionButton(); updateHint(); updateOnScroll();
+window.addEventListener('hashchange',() => {
+  const index=chapters.findIndex(chapter => `#${chapter.id}`===location.hash);
+  if (index>=0) goToChapter(index,true);
+});
 if (location.hash) {
   const index=chapters.findIndex((chapter) => `#${chapter.id}`===location.hash);
   if (index>=0) requestAnimationFrame(() => { goToChapter(index,true); updateOnScroll(); });
