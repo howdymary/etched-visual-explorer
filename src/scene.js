@@ -1,4 +1,4 @@
-import { teardownMarkup, createTeardown } from './teardown.js?v=20261026-rack-in-5';
+import { teardownMarkup, createTeardown } from './teardown.js?v=20261026-rack-in-6';
 
 let sceneSequence = 0;
 

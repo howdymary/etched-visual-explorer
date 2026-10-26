@@ -1,6 +1,6 @@
-import { chapters, components, sources } from './content.js?v=20261026-rack-in-5';
-import { createScene } from './scene.js?v=20261026-rack-in-5';
-import { essay } from './essay.js?v=20261026-rack-in-5';
+import { chapters, components, sources } from './content.js?v=20261026-rack-in-6';
+import { createScene } from './scene.js?v=20261026-rack-in-6';
+import { essay } from './essay.js?v=20261026-rack-in-6';
 
 const $ = (id) => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -203,6 +203,12 @@ window.addEventListener('hashchange',() => {
   if (index>=0) goToChapter(index,true);
 });
 if (location.hash) {
-  const index=chapters.findIndex((chapter) => `#${chapter.id}`===location.hash);
-  if (index>=0) { goToChapter(index,true); updateOnScroll(); }
+  const initialHash=location.hash;
+  const alignInitialChapter=() => {
+    const index=chapters.findIndex((chapter) => `#${chapter.id}`===initialHash);
+    if (location.hash===initialHash && index>=0) { goToChapter(index,true); updateOnScroll(); }
+  };
+  alignInitialChapter();
+  // The browser can restore its fragment position after module initialization.
+  if (document.readyState!=='complete') window.addEventListener('load',alignInitialChapter,{once:true});
 }
